@@ -1,0 +1,44 @@
+{
+    "name": "plexi/report-collection",
+    "description": "Manipula qualquer lista de dados para serem exportadas em arquivos de relatório",
+    "keywords": ["laravel","report","collection","exporters","helpers"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ricardo Pereira",
+            "email": "rpdesignerfly@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "laravel/framework": "~5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "ReportCollection\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ReportCollection\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "ReportCollection\\ServiceProvider"
+            ],
+            "aliases": {
+                "ReportCollection": "ReportCollection\\Facade"
+            }
+        }
+    },
+    "require-dev": {
+        "illuminate/framework": "5.5.x"
+    }
+}
