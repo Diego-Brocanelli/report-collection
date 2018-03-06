@@ -16,4 +16,9 @@ class ExampleController extends Controller
     {
         return view('report-collection::index');
     }
+
+    public function download($format)
+    {
+        return view('report-collection::index');
+    }
 }

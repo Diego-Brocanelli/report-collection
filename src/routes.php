@@ -17,4 +17,6 @@
 
         Route::get('/report-collection', 'ExampleController@index')->name('report-collection.index');
 
+        Route::get('/report-collection/download/{format}', 'ExampleController@download')->name('report-collection.download');
+
     });
