@@ -1,0 +1,7 @@
+#!/usr/bin/env php
+<?php
+
+echo shell_exec('../../../vendor/bin/phpunit .');
+
+
+

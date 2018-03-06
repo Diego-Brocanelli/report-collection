@@ -18,6 +18,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             $this->loadRoutesFrom(__DIR__.'/routes.php');
         }
 
-        \ReportCollection::loadHelpers();
+        include('helpers.php');
     }
 }

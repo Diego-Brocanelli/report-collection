@@ -89,6 +89,16 @@ $ cd /caminho/do/projeto
 $ composer update
 ```
 
+### 5. Executando os testes de unidade
+
+Basta entrar no diretório do pacote e executar o phpunit que acompanha o Laravel:
+
+```bash
+$ cd /caminho/do/projeto/packages/plexi/report-collection
+$ ../../../vendor/bin/phpunit .
+```
+
+
 Para mais informações, leia:
 
 * [Package Auto Discovery](https://medium.com/@taylorotwell/package-auto-discovery-in-laravel-5-5-ea9e3ab20518)

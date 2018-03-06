@@ -10,15 +10,6 @@ use Illuminate\Support\Str;
 
 class Accessor
 {
-    /**
-     * Carrega e inclui os helpers do pacote
-     * 
-     * @return void
-     */
-    public function loadHelpers()
-    {
-        include('helpers.php');
-    }
 
     public function createFromFile($filename, $force_extension = null)
     {
