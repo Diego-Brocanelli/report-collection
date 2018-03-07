@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 
 class Collector
 {
+    private static $instance = null;
+
     private $buffer = null;
 
     private $title = 'Report Document';
@@ -36,71 +38,100 @@ class Collector
         return $this->getSpreadsheetObject()->getActiveSheet();
     }
 
-    public function createFromFile($filename, $force_extension = null)
+    /**
+     * Ex: 10
+     */
+    public function getLastRow() 
     {
+        return $this->getActiveSheet()->getHighestRow();
+    }
+
+    /**
+     * Ex: H
+     */
+    public function getLastColumn() 
+    {
+        return $this->getActiveSheet()->getHighestColumn();
+    }
+
+    public static function createFromFile($filename, $force_extension = null)
+    {
+        if (self::$instance == null) {
+            self::$instance = new self;
+        }
+
         $extension = ($force_extension!=null)
             ? $force_extension
             : pathinfo($filename, PATHINFO_EXTENSION);
 
-        foreach($this->formats as $slug => $base) {
+        self::$instance->buffer = null;
+
+        foreach(self::$instance->formats as $slug => $base) {
+
             if (Str::lower($extension) == $slug) {
-                $class_name = 'Reader\\'.$base;
+
+                $class_name = 'PhpOffice\\PhpSpreadsheet\\Reader\\'.$base;
                 $reader = new $class_name();
-                $this->buffer = $reader->load($temp_file);
+                self::$instance->buffer = $reader->load($filename);
                 break;
             }
         }
 
-        // Adicionar log
-
-        return $this;
+        return self::$instance;
     }
 
-    public function createFromHtmlString($string)
+    public static function createFromHtmlString($string)
     {
+        self::$instance = new self;
+
         // Cria um arquivo temporário
         $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
         file_put_contents($temp_file, $string);
 
         // Carrega o arquivo na planilha
-        $this->createFromFile($temp_file, 'html')
+        self::$instance->createFromFile($temp_file, 'html');
         unlink($temp_file);
 
-        return $this;
+        return self::$instance;
     }
 
-    public function createFromArray(array $array)
+    public static function createFromArray(array $array)
     {
+        self::$instance = new self;
+
+        self::$instance->buffer = null;
+
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getActiveSheet()
             ->fromArray(
                 $array,  // The data to set
-                NULL,    // Array values with this value will not be set
-        );
+                NULL    // Array values with this value will not be set
+            );
 
         $this->buffer = $spreadsheet;
 
-        return $this;
+        return self::$instance;
     }
 
     public function toArray()
     {
-        return $this->getActiveSheet()->toArray();
+        // Planilhas do Gnumeric e Xlsx
+        // possuem linha e colunas nulas na exportação de array
+        // por isso, são removidas aqui
 
-        // $total_rows    = $this->buffer->getActiveSheet()->getHighestRow(); // e.g. 10
-        // $total_columns = $this->buffer->getActiveSheet()->getHighestColumn(); // A - Z
-        // $max           = $total_columns.$total_rows;
+        $list = [];
+        $array = $this->getActiveSheet()->toArray();
 
-        // $array = $this->buffer->getActiveSheet()
-        //     ->rangeToArray(
-        //     "A1:$max",     // The worksheet range that we want to retrieve
-        //     NULL,        // Value that should be returned for empty cells
-        //     TRUE,        // Should formulas be calculated (the equivalent of getCalculatedValue() for each cell)
-        //     TRUE,        // Should values be formatted (the equivalent of getFormattedValue() for each cell)
-        //     TRUE         // Should the array be indexed by cell row and cell column
-        // );
+        // Linhas
+        foreach($array as $row_id => $rows) {
 
-        //return $array;
+            $line = array_filter($rows, function($v){ return !is_null($v); });
+            if (!empty($line)) {
+                $list[] = $line;
+            }
+        }
+
+        return $list;
     }
 
     public function save($filename)

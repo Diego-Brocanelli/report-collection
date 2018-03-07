@@ -2,23 +2,19 @@
 
 namespace ReportCollection;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Reader;
-use PhpOffice\PhpSpreadsheet\Style;
-use Illuminate\Support\Str;
+use ReportCollection\Libs\Collector;
 
 class Accessor
 {
 
     public function createFromFile($filename, $force_extension = null)
     {
-        return \ReportCollection::createFromFile($filename, $force_extension);
+        return Collector::createFromFile($filename, $force_extension);
     }
 
     public function createFromHtmlString($string)
     {
-        return \ReportCollection::createFromHtmlString($string);
+        return Collector::createFromHtmlString($string);
     }
 
     public function createFromBuilder($model)
@@ -26,6 +22,6 @@ class Accessor
         $array = [];
         //...
 
-        return \ReportCollection::createFromArray($array);
+        return Collector::createFromArray($array);
     }
 }
