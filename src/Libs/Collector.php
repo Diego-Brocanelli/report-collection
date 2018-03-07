@@ -54,6 +54,18 @@ class Collector
         return $this->getActiveSheet()->getHighestColumn();
     }
 
+    //
+    // Métodos Construtores
+    //
+
+    /**
+     * Cria uma planilha a partir de um arquivo.
+     * As extensões suportadas são:
+     * csv, gnumeric, htm, html, ods, slk, xls, xlsx e xml
+     * 
+     * @param string $filename Arquivo e caminho completo
+     * @param string force_extension para arquivos sem extensão
+     */
     public static function createFromFile($filename, $force_extension = null)
     {
         if (self::$instance == null) {
@@ -80,6 +92,11 @@ class Collector
         return self::$instance;
     }
 
+    /**
+     * Cria uma planilha a partir de código html
+     * 
+     * @param string $string
+     */
     public static function createFromHtmlString($string)
     {
         self::$instance = new self;
@@ -104,14 +121,53 @@ class Collector
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getActiveSheet()
             ->fromArray(
-                $array,  // The data to set
-                NULL    // Array values with this value will not be set
+                $array,  // os dados a adicionar
+                NULL     // itens com este valor não serão setados
             );
 
-        $this->buffer = $spreadsheet;
+        self::$instance->buffer = $spreadsheet;
 
         return self::$instance;
     }
+
+    public static function createFromObject($object)
+    {
+        self::$instance = new self;
+
+        self::$instance->buffer = null;
+
+        if (method_exists($object, 'toArray')) {
+            $array = $object->toArray();
+        }
+        elseif($object instanceof Iterator) {
+            $array = iterator_to_array($object);
+
+        }
+        else {
+
+            $array = (array) $object;
+            foreach ($array as $k => $item) {
+                $array[$k] = (array) $item;
+            }
+
+            // throw new LogicException("The object must have a toArray method or be an implementation of Iterator", 1);
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getActiveSheet()
+            ->fromArray(
+                $array,  // os dados a adicionar
+                NULL     // itens com este valor não serão setados
+            );
+
+        self::$instance->buffer = $spreadsheet;
+
+        return self::$instance;
+    }
+
+    //
+    // API
+    //
 
     public function toArray()
     {
@@ -134,6 +190,14 @@ class Collector
         return $list;
     }
 
+    /**
+     * Salva a planilha em um formato especifico.
+     * As extensões suportadas são:
+     * csv, html, ods, pdf, xls e xlsx
+     * 
+     * @param string $filename Arquivo e caminho completo
+     * @param string force_extension para arquivos sem extensão
+     */
     public function save($filename)
     {
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
@@ -157,6 +221,14 @@ class Collector
         // Cabeçalhos para MimeType
         switch(Str::lower($extension))
         {
+            case 'csv':
+                header('Content-Type: text/csv');
+                break;
+
+            case 'html':
+                header('Content-Type: text/html');
+                break;
+
             case 'ods':
                 header('Content-Type: application/vnd.oasis.opendocument.spreadsheet');
                 break;

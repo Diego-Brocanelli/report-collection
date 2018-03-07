@@ -17,11 +17,13 @@ class Accessor
         return Collector::createFromHtmlString($string);
     }
 
-    public function createFromBuilder($model)
+    public function createFromArray($array)
     {
-        $array = [];
-        //...
-
         return Collector::createFromArray($array);
+    }
+
+    public function createFromObject($object)
+    {
+        return Collector::createFromObject($object);
     }
 }
