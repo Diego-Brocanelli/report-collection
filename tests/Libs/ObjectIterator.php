@@ -1,8 +1,8 @@
 <?php
 
-namespace ReportCollection\Tests\Unit;
+namespace ReportCollection\Tests\Libs;
 
-class ImportObjectTestIterator implements \Iterator {
+class ObjectIterator implements \Iterator {
 
     private $position = 0;
 

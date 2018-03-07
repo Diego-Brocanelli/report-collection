@@ -136,13 +136,15 @@ class Collector
 
         self::$instance->buffer = null;
 
+        // Objeto possui o método toArray
         if (method_exists($object, 'toArray')) {
             $array = $object->toArray();
         }
-        elseif($object instanceof Iterator) {
+        // Objeto é Iterável
+        elseif($object instanceof \Traversable) {
             $array = iterator_to_array($object);
-
         }
+        // Objeto simples
         else {
 
             $array = (array) $object;
@@ -150,7 +152,9 @@ class Collector
                 $array[$k] = (array) $item;
             }
 
-            // throw new LogicException("The object must have a toArray method or be an implementation of Iterator", 1);
+            if (count($array) == 0) {
+                throw new \UnexpectedValueException("The object must have attributes or a toArray method or be an implementation of Iterator", 1);
+            }
         }
 
         $spreadsheet = new Spreadsheet();
