@@ -16,13 +16,24 @@ class Collector
 
     private $title = 'Report Document';
 
-    private $formats = [
+    private $readers = [
         'csv'      => 'Csv',
         'gnumeric' => 'Gnumeric',
         'htm'      => 'Html',
         'html'     => 'Html',
         'ods'      => 'Ods',
         'slk'      => 'Slk',
+        'xls'      => 'Xls',
+        'xlsx'     => 'Xlsx',
+        'xml'      => 'Xml'
+    ];
+
+    private $writers = [
+        'csv'      => 'Csv',
+        'htm'      => 'Html',
+        'html'     => 'Html',
+        'ods'      => 'Ods',
+        'pdf'      => 'Pdf',
         'xls'      => 'Xls',
         'xlsx'     => 'Xlsx',
         'xml'      => 'Xml'
@@ -78,7 +89,7 @@ class Collector
 
         self::$instance->buffer = null;
 
-        foreach(self::$instance->formats as $slug => $base) {
+        foreach(self::$instance->readers as $slug => $base) {
 
             if (Str::lower($extension) == $slug) {
 
@@ -87,6 +98,11 @@ class Collector
                 self::$instance->buffer = $reader->load($filename);
                 break;
             }
+        }
+
+        if (self::$instance->buffer == null) {
+            throw new \InvalidArgumentException(
+                "Unsupported file type for reading. Use " . implode(',', self::$instance->readers));
         }
 
         return self::$instance;
@@ -207,11 +223,50 @@ class Collector
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
         $writer = null;
-        foreach($this->formats as $slug => $base) {
-            if (Str::lower($extension) == $slug) {
-                $writer = IOFactory::createWriter($this->object, $base);
+        foreach($this->writers as $slug => $base) {
+
+            if (Str::lower($extension) == $slug && $slug == 'pdf') {
+
+                $writer = IOFactory::createWriter($this->getSpreadsheetObject(), 'Mpdf');
                 $writer->save($filename);
+
             }
+            elseif (Str::lower($extension) == $slug && $slug == 'xml') {
+
+                // $writer = IOFactory::createWriter($this->getSpreadsheetObject(), 'Html');
+                // $data = explode('</style>', $writer->generateSheetData())[1];
+                // $data = preg_replace('#<col class="[a-zA-Z0-9]*">#', '', $data);
+                // file_put_contents($filename, $data);
+                
+                $data = $this->toArray();
+                $writer = new \SimpleXMLElement('<Table/>');
+                $headers = [];
+                foreach ($data as $index => $item) {
+
+                    if ($index==0) {
+                        $headers = $item;
+                    }
+                    $child = $writer->addChild('Row');
+                    foreach ($headers as $k => $name) {
+                        $child->addChild('Cell', $item[$k]);
+                    }
+                }
+                
+                $dom = dom_import_simplexml($writer)->ownerDocument;
+                $dom->formatOutput = true;
+                $dom->save($filename);
+            }
+            elseif (Str::lower($extension) == $slug) {
+
+                $writer = IOFactory::createWriter($this->getSpreadsheetObject(), $base);
+                $writer->save($filename);
+                
+            }
+        }
+
+        if ($writer == null) {
+            throw new \InvalidArgumentException(
+                "Unsupported file type for writing. Use " . implode(',', self::$instance->writers));
         }
 
         return $this;
