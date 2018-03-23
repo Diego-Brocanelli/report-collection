@@ -45,11 +45,17 @@ class Collector
     private $header_rows = [];
 
     private $default_styles = [
-        'background-color-odd'  => '#ffffff',
-        'background-color-even' => '#ffffff',
+        'background-color-odd'  => '#ffffff', // ímpar
+        'background-color-even' => '#f5f5f5', // par
+
+        'border-color-inside'   => '#cccccc',
+        'border-color-outside'  => '#777777',
+        'border-width-inside'   => '#cccccc',
+        'border-width-outside'  => '#777777',
+
         'line-height'           => '25',
         
-        'color'                 => '#ff0000',
+        'color'                 => '#555555',
         'font-face'             => 'Arial',
         'font-size'             => '12',
         'font-weight'           => 'normal',
@@ -59,7 +65,7 @@ class Collector
     ];
 
     private $header_styles = [
-        
+         
     ];
 
     private $body_styles = [
@@ -68,6 +74,8 @@ class Collector
 
     public $debug = [];
 
+    // Para controlar odd e even
+    private $row_control = 1;
 
     //
     // Métodos Construtores
@@ -261,6 +269,9 @@ class Collector
     // Aparencia da Planilha
     //
 
+    /**
+     * @return array
+     */
     public function normalizeStyles(array $styles)
     {
         $clean_styles = [];
@@ -286,6 +297,9 @@ class Collector
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public function getStyles($target = null)
     {
         switch($target) {
@@ -303,87 +317,28 @@ class Collector
         }
     }
 
+    /**
+     * @return array
+     */
     public function setHeaderStyles(array $styles)
     {
         $this->setStyles('header', $styles);
         return $this;
     }
 
+    /**
+     * @return array
+     */
     public function setBodyStyles(array $styles)
     {
         $this->setStyles('body', $styles);
         return $this;
     }
 
-    
-
-    
-    //
-    // API
-    //
-
-    public function toArray()
-    {
-        // Planilhas do Gnumeric e Xlsx
-        // possuem linha e colunas nulas na exportação de array
-        // por isso, são removidas aqui
-
-        $list = [];
-        $array = $this->getActiveSheet()->toArray();
-
-        // Linhas
-        foreach($array as $row_id => $rows) {
-
-            $line = array_filter($rows, function($v){ return !is_null($v); });
-            if (!empty($line)) {
-                $list[] = $line;
-            }
-        }
-
-        return $list;
-    }
-
-
-    //
-    // Formatação
-    //
-
-    
-
-    
-
-    private function setupHeader()
-    {
-        if ($this->getHeaderNumRows() == 0) {
-            return false;
-        }
-
-        $header_styles = $this->normalizeStyles($this->header_styles);
-
-        foreach ($this->header_rows as $index => $row) {
-
-            $line = $index+1;
-
-            $this->getActiveSheet()->insertNewRowBefore($line, 1);
-
-            $styles = count($row['styles'])>0 
-                ? $row['styles'] 
-                : $header_styles;
-
-
-            $content = $this->parseTextContent($row['content'], $styles);
-            $colspan = is_numeric($row['colspan']) 
-                ? $this->getColumnVowel($row['colspan'])
-                : $this->getLastColumn();
-
-            $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
-            $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
-
-            $this->applyStyles($this->getActiveSheet()->getStyle("A{$line}"), $styles);
-        }
-    }
-
-    public function parseTextContent($string, array $styles = [])
+    /**
+     * @return \PhpOffice\PhpSpreadsheet\RichText\RichText
+     */
+    public function parseHtmlText($string, array $styles = [])
     {
         $styles = $this->normalizeStyles($styles);
 
@@ -416,7 +371,7 @@ class Collector
 
         $text = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
 
-        $this->debug['parseTextContent'] = implode('', $strips);
+        $this->debug['parseHtmlText'] = implode('', $strips);
 
         $hex = 'FF' . trim(strtoupper($styles['color']), '#');
         $color = new \PhpOffice\PhpSpreadsheet\Style\Color($hex);
@@ -464,40 +419,129 @@ class Collector
         return $text;
     }
 
-    private function applyStyles($object, array $styles)
+
+    //
+    // Formatação
+    //
+
+    private function debugStyle($range, $param, $value, $type = 'cell')
     {
+        // Armazena as informações para os testes de unidade
+        if (!isset($this->debug['applyStyles'])) {
+            $this->debug['applyStyles'] = [];
+            $this->debug['applyStyles']['default'] = [];
+            $this->debug['applyStyles']['cells'] = [];
+            $this->debug['applyStyles']['rows'] = [];
+        }
+
+        if (!isset($this->debug['applyStyles']['cells'][$range])) {
+            $this->debug['applyStyles']['cells'][$range] = [];
+        }
+
+        if ($type == 'default') {
+            $this->debug['applyStyles']['default'][$param] = $value;
+        }
+        elseif ($type == 'cell') {
+            $this->debug['applyStyles']['cells'][$range][$param] = $value;
+        }
+        else {
+            $this->debug['applyStyles']['rows'][$range][$param] = $value;
+        }
+    }
+
+    private function applyStyles($target, $row = null, $col = null)
+    {
+        $styles = $this->getStyles($target);
+
+        if ($target == 'default') {
+            $range     = null;
+            $type_cell = 'default';
+            $type_row  = 'default';
+            $object    = $this->getSpreadsheetObject()->getDefaultStyle();
+        }
+        else {
+
+            if($row == null || $col == null) {
+                throw new InvalidArgumentException("Arguments row and col can not be null");
+            }
+
+            $range     = $this->getColumnVowel($col).$row;
+            $type_cell = 'cell';
+            $type_row  = 'row';
+            $object    = $this->getActiveSheet()->getStyle($range);
+        }
+
         foreach ($styles as $param => $value) {
+
+            $background_param = ($this->row_control%2 == 0)
+                ? 'background-color-odd' : 'background-color-even';
+
+            if ($value == 'none') {
+                continue;
+            }
 
             switch($param) {
 
-                // case 'background-color':
-                //     $value = 'FF' . trim(strtoupper($value), '#');
-                //     $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-                //     $style_range->getFill()
-                //                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                //                 ->setStartColor($color);
-                //     break;
+                case 'border-color-inside':
+                case 'border-color-outside':
+                case 'border-width-inside':
+                case 'border-width-outside':
+                    // TODO ...
+                    break;
+
+                case 'background-color-odd':
+                // case 'background-color-even': <- even não é necessário pois o parametro é dinamico
+
+                    if ($styles[$background_param] == 'none') {
+                        continue;
+                    }
+                    $value = 'FF' . trim(strtoupper($styles[$background_param]), '#');
+                    $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+                    $object->getFill()
+                         ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                         ->setStartColor($color);
+                    $this->debugStyle($range, 'background', str_replace('background-color-', '', $background_param).":".$value, $type_cell);
+                    break;
 
                 case 'color':
                     $value = 'FF' . trim(strtoupper($value), '#');
                     $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
                     $object->getFont()->setColor($color);
+                    $this->debugStyle($range, $param, $value, $type_cell);
                     break;
 
                 case 'font-face':
                     $object->getFont()->setName($value);
+                    $this->debugStyle($range, $param, $value, $type_cell);
                     break;
 
                 case 'font-size':
                     $object->getFont()->setSize($value);
+                    $this->debugStyle($range, $param, $value, $type_cell);
                     break;
 
                 case 'font-weight':
-                    $object->getFont()->setBold($value=='bold');
+                    $value = $value=='bold';
+                    $object->getFont()->setBold($value);
+                    $this->debugStyle($range, $param, "setBold(".var_export($value, true).")", $type_cell);
                     break;
 
                 case 'font-style':
+                    $value = $value=='italic';
                     $object->getFont()->setItalic($value=='italic');
+                    $this->debugStyle($range, $param, "setItalic(".var_export($value, true).")", $type_cell);
+                    break;
+
+                case 'line-height':
+                    $value = intval($value);
+                    if ($target == 'default') {
+                        $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($value);
+                    }
+                    elseif ($col = 1) {
+                        // Para aplicar apenas uma vez por linha
+                        $this->getActiveSheet()->getRowDimension($row)->setRowHeight($value);
+                    }
+                    $this->debugStyle($row, $param, $value, $type_row);
                     break;
 
                 // case 'border-style':
@@ -519,6 +563,7 @@ class Collector
                             $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
                     }
                     $object->getAlignment()->setVertical($align);
+                    $this->debugStyle($range, $param, $align, $type_cell);
                     break;
 
                 case 'text-align':
@@ -539,81 +584,132 @@ class Collector
                             $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
                     }
                     $object->getAlignment()->setHorizontal($align);
+                    $this->debugStyle($range, $param, $align, $type_cell);
                     break;
             }
         }
     }
 
-    private function setupDefaultStyles()
+    private function setupSpreadsheet()
     {
-        $this->getActiveSheet()->getDefaultRowDimension()
-            ->setRowHeight($this->default_styles['line-height']);
-
-        $this->applyStyles($this->getSpreadsheetObject()->getDefaultStyle(), $this->default_styles);
+        $this->applyStyles('default');
     }
 
-    private function setupHeaderStyles()
+    private function setupBody()
     {
-        $rows = $this->getHeaderNumRows();
-        if ($rows == 0) {
+        // Range
+        $start_row = $this->getHeaderNumRows() + 1;
+        $ended_row = $this->getLastRow();
+        $start_col = 1;
+        $ended_col = $this->getLastColumn();
+
+        //$range = 'A' . $start_row . ':' . $this->getLastColumn() . $ended_row;
+
+        // Para controlar odd e even
+        $this->row_control = 0;
+
+        // Aplica os estilos a cada célula independente
+        for ($row=$start_row; $row<=$ended_row; $row++) {
+
+            for ($col=1; $col<=$ended_row; $col++) {
+                $this->applyStyles('body', $row, $col);
+            }
+            $this->row_control++;
+        }
+    }    
+
+    private function setupHeader()
+    {
+        if ($this->getHeaderNumRows() == 0) {
             return false;
         }
 
-        $range = 'A1:' . $this->getLastColumn() . $rows;
+        // $header_styles = $this->normalizeStyles($this->header_styles);
 
-        // Altura das linhas
-        for($x=1; $x <= $rows; $x++) {
-            $this->getActiveSheet()
-                 ->getRowDimension($x)
-                 ->setRowHeight($this->header_styles['line-height']);
-        }
+        // foreach ($this->header_rows as $index => $row) {
 
-        //$this->applyStyles($this->getActiveSheet()->getStyle($range), $this->header_styles);
+        //     $line = $index+1;
+
+        //     $this->getActiveSheet()->insertNewRowBefore($line, 1);
+
+        //     $styles = count($row['styles'])>0 
+        //         ? $row['styles'] 
+        //         : $header_styles;
 
 
-        $value = 'FF' . trim($this->header_styles['background-color-odd'], '#');
-        $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-        $this->getActiveSheet()->getStyle($range)->getFill()
-                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                    ->setStartColor($color);
+        //     $content = $this->parseHtmlText($row['content'], $styles);
+        //     $colspan = is_numeric($row['colspan']) 
+        //         ? $this->getColumnVowel($row['colspan'])
+        //         : $this->getLastColumn();
 
-        
+        //     $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
+        //     $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
+
+        //     $this->applyStyles($this->getActiveSheet()->getStyle("A{$line}"), $styles);
+        // }
     }
 
-    private function setupBodyStyles()
-    {
-        $styles = $this->normalizeStyles($this->body_styles);
+    // private function setupDefaultStyles()
+    // {
+    //     $this->getActiveSheet()->getDefaultRowDimension()
+    //         ->setRowHeight($this->default_styles['line-height']);
 
-        $start_row = $this->getHeaderNumRows() + 1;
-        $end_row   = $this->getLastRow();
+    //     $this->applyStyles($this->getSpreadsheetObject()->getDefaultStyle(), $this->default_styles);
+    // }
 
-        $range = 'A' . $start_row . ':' . $this->getLastColumn() . $end_row;
+    // private function setupHeaderStyles()
+    // {
+    //     $rows = $this->getHeaderNumRows();
+    //     if ($rows == 0) {
+    //         return false;
+    //     }
 
-        $this->applyStyles($this->getActiveSheet()->getStyle($range), $styles);
+    //     $range = 'A1:' . $this->getLastColumn() . $rows;
 
-        for($x=$start_row; $x <= $end_row; $x++) {
+    //     // Altura das linhas
+    //     for($x=1; $x <= $rows; $x++) {
+    //         $this->getActiveSheet()
+    //              ->getRowDimension($x)
+    //              ->setRowHeight($this->header_styles['line-height']);
+    //     }
 
-            $this->getActiveSheet()
-                 ->getRowDimension($x)
-                 ->setRowHeight($styles['line-height']);
+    //     //$this->applyStyles($this->getActiveSheet()->getStyle($range), $this->header_styles);
 
-            if ($x%2 == 0) {
-                $value = $styles['background-color-odd'];
-            }
-            else {
-                $value = $styles['background-color-even'];
-            }
 
-            $range_bg = 'A' . $x . ':' . $this->getLastColumn() . $x;
+    //     $value = 'FF' . trim($this->header_styles['background-color-odd'], '#');
+    //     $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+    //     $this->getActiveSheet()->getStyle($range)->getFill()
+    //                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+    //                 ->setStartColor($color);
 
-            // $value = 'FF' . trim(strtoupper($value), '#');
-            // $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-            // $this->getActiveSheet()->getStyle($range)
-            //      ->getFill()
-            //      ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-            //      ->setStartColor($color);
-        }
         
+    // }
+
+    
+
+    //
+    // Exportação
+    //
+
+    public function toArray()
+    {
+        // Planilhas do Gnumeric e Xlsx
+        // possuem linha e colunas nulas na exportação de array
+        // por isso, são removidas aqui
+
+        $list = [];
+        $array = $this->getActiveSheet()->toArray();
+
+        // Linhas
+        foreach($array as $row_id => $rows) {
+
+            $line = array_filter($rows, function($v){ return !is_null($v); });
+            if (!empty($line)) {
+                $list[] = $line;
+            }
+        }
+
+        return $list;
     }
 
     /**
@@ -626,13 +722,17 @@ class Collector
      */
     public function save($filename)
     {
-        $this->setupHeader();
+        $this->setupSpreadsheet();
 
-        $this->setupDefaultStyles();
+        $this->setupBody();
 
-        $this->setupBodyStyles();
+        //$this->setupHeader();
 
-        $this->setupHeaderStyles();
+        //$this->setupDefaultStyles();
+
+        
+
+        //$this->setupHeaderStyles();
 
         // Prepara para salvar
 

@@ -5,9 +5,9 @@ namespace ReportCollection\Tests\Unit;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class StylesTest extends TestCase
+class StylesSettersGettersTest extends TestCase
 {
-    public function testStylesGetterAndSetter()
+    public function testStyles()
     {
         // Estilos padrões empre existem
         $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
