@@ -48,10 +48,14 @@ class Collector
         'background-color-odd'  => '#ffffff', // ímpar
         'background-color-even' => '#f5f5f5', // par
 
-        'border-color-inside'   => '#cccccc',
-        'border-color-outside'  => '#777777',
-        'border-width-inside'   => '#cccccc',
-        'border-width-outside'  => '#777777',
+        'border-color-inside'   => '#ff0000',
+        'border-color-outside'  => '#0000ff',
+
+        // none, 
+        // dash-dot, dash-dot-dot, dashed, dotted, double, hair, medium, 
+        // medium-dash-dot, medium-dashed, slant-dash-dot, thick, thin
+        'border-style-inside'   => 'thin',
+        'border-style-outside'  => 'thick',
 
         'line-height'           => '25',
         
@@ -76,6 +80,9 @@ class Collector
 
     // Para controlar odd e even
     private $row_control = 1;
+
+    private $last_col = null;
+    private $last_row = null;
 
     //
     // Métodos Construtores
@@ -217,7 +224,11 @@ class Collector
      */
     public function getLastRow() 
     {
-        return $this->getActiveSheet()->getHighestRow();
+        if($this->last_row == null) {
+            $this->last_row = $this->getActiveSheet()->getHighestRow();
+        }
+
+        return $this->last_row;
     }
 
     /**
@@ -225,7 +236,11 @@ class Collector
      */
     public function getLastColumn() 
     {
-        return $this->getActiveSheet()->getHighestColumn();
+        if($this->last_col == null) {
+            $this->last_col = $this->getActiveSheet()->getHighestColumn();
+        }
+
+        return $this->last_col;
     }
 
     private function getColumnVowel($number)
@@ -234,6 +249,14 @@ class Collector
         $map = range('A', 'Z');
         // TODO: adicionar + alfabetos 'AA .. DA, DB'
         return isset($map[$num]) ? $map[$num] : $this->getLastColumn();
+    }
+
+    private function getColumnNumber($vowel)
+    {
+        $map = range('A', 'Z');
+        $map = array_flip($map);
+        // TODO: adicionar + alfabetos 'AA .. DA, DB'
+        return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
     }
 
 
@@ -449,6 +472,30 @@ class Collector
         }
     }
 
+    private function getMappedBorderStyle($param)
+    {
+        $map = [
+            'none'                => Style\Border::BORDER_NONE, 
+            'dash-dot'            => Style\Border::BORDER_DASHDOT, 
+            'dash-dot-dot'        => Style\Border::BORDER_DASHDOTDOT, 
+            'dashed'              => Style\Border::BORDER_DASHED, 
+            'dotted'              => Style\Border::BORDER_DOTTED, 
+            'double'              => Style\Border::BORDER_DOUBLE, 
+            'hair'                => Style\Border::BORDER_HAIR, 
+            'medium'              => Style\Border::BORDER_MEDIUM, 
+            'medium-dash-dot'     => Style\Border::BORDER_MEDIUMDASHDOT, 
+            'medium-dash-dot-dot' => Style\Border::BORDER_MEDIUMDASHDOTDOT, 
+            'medium-dashed'       => Style\Border::BORDER_MEDIUMDASHED, 
+            'slant-dash-dot'      => Style\Border::BORDER_SLANTDASHDOT, 
+            'thick'               => Style\Border::BORDER_THICK, 
+            'thin'                => Style\Border::BORDER_THIN,
+        ];
+
+        return isset($map[$param]) 
+            ? $map[$param] 
+            : Style\Border::BORDER_NONE;
+    }
+
     private function applyStyles($target, $row = null, $col = null)
     {
         $styles = $this->getStyles($target);
@@ -471,6 +518,26 @@ class Collector
             $object    = $this->getActiveSheet()->getStyle($range);
         }
 
+        // Bordas
+        $inside_color_value = 'FF' . trim(strtoupper($styles['border-color-inside']), '#');
+        $inside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($inside_color_value);
+        $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
+
+        $outside_color_value = 'FF' . trim(strtoupper($styles['border-color-outside']), '#');
+        $outside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($outside_color_value);
+        $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
+
+        if ($target == 'body') {
+            $start_row = $this->getHeaderNumRows() + 1;
+            $ended_row = $this->getLastRow();
+            $ended_col = $this->getLastColumn();
+        }
+        elseif($target == 'header') {
+            $start_row = 1;
+            $ended_row = $this->getHeaderNumRows();
+            $ended_col = $this->getLastColumn();
+        }
+
         foreach ($styles as $param => $value) {
 
             $background_param = ($this->row_control%2 == 0)
@@ -482,11 +549,52 @@ class Collector
 
             switch($param) {
 
-                case 'border-color-inside':
-                case 'border-color-outside':
-                case 'border-width-inside':
-                case 'border-width-outside':
-                    // TODO ...
+                case 'border-style-inside':
+
+                    if ($target !== 'default') {
+
+                        if ($row > $start_row && $col <= $this->getColumnNumber($ended_col)) {
+                            $object->getBorders()->getTop()
+                                ->setBorderStyle($inside_style)
+                                ->setColor($inside_color);
+                        }
+
+                        if ($col > 1 && $col <= $this->getColumnNumber($ended_col)) {
+                            $object->getBorders()->getLeft()
+                                ->setBorderStyle($inside_style)
+                                ->setColor($inside_color);
+                        }
+                    }
+                    break;
+
+                case 'border-style-outside':
+
+                    if ($target !== 'default') {
+
+                        if ($row == $start_row && $col <= $this->getColumnNumber($ended_col)) {
+                            $object->getBorders()->getTop()
+                                ->setBorderStyle($outside_style)
+                                ->setColor($outside_color);
+                        }
+
+                        if ($row == $ended_row && $col <= $this->getColumnNumber($ended_col)) {
+                            $object->getBorders()->getBottom()
+                                ->setBorderStyle($outside_style)
+                                ->setColor($outside_color); 
+                        }
+
+                        if ($col == 1) {
+                            $object->getBorders()->getLeft()
+                                ->setBorderStyle($outside_style)
+                                ->setColor($outside_color);
+                        }
+
+                        if ($col == $this->getColumnNumber($ended_col)) {
+                            $object->getBorders()->getRight()
+                                ->setBorderStyle($outside_style)
+                                ->setColor($outside_color);
+                        }
+                    }
                     break;
 
                 case 'background-color-odd':
@@ -495,6 +603,11 @@ class Collector
                     if ($styles[$background_param] == 'none') {
                         continue;
                     }
+
+                    if ($target !== 'default' && $col > $this->getColumnNumber($ended_col)) {
+                        continue;
+                    }
+                    
                     $value = 'FF' . trim(strtoupper($styles[$background_param]), '#');
                     $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
                     $object->getFill()
