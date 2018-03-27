@@ -68,13 +68,9 @@ class Collector
         'text-align'            => 'left',
     ];
 
-    private $header_styles = [
-         
-    ];
+    private $header_styles = [];
 
-    private $body_styles = [
-        
-    ];
+    private $body_styles = [];
 
     public $debug = [];
 
@@ -496,9 +492,11 @@ class Collector
             : Style\Border::BORDER_NONE;
     }
 
-    private function applyStyles($target, $row = null, $col = null)
+    private function applyStyles($target, $row = null, $col = null, array $forced_styles = null)
     {
-        $styles = $this->getStyles($target);
+        $styles = $forced_styles==null
+            ? $this->getStyles($target)
+            : $forced_styles;
 
         if ($target == 'default') {
             $range     = null;
@@ -528,14 +526,14 @@ class Collector
         $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
 
         if ($target == 'body') {
-            $start_row = $this->getHeaderNumRows() + 1;
+            $start_row = 1;
             $ended_row = $this->getLastRow();
             $ended_col = $this->getLastColumn();
         }
         elseif($target == 'header') {
             $start_row = 1;
             $ended_row = $this->getHeaderNumRows();
-            $ended_col = $this->getLastColumn();
+            $ended_col = $this->getColumnVowel(1);
         }
 
         foreach ($styles as $param => $value) {
@@ -711,7 +709,7 @@ class Collector
     private function setupBody()
     {
         // Range
-        $start_row = $this->getHeaderNumRows() + 1;
+        $start_row = 1;
         $ended_row = $this->getLastRow();
         $start_col = 1;
         $ended_col = $this->getLastColumn();
@@ -737,29 +735,29 @@ class Collector
             return false;
         }
 
-        // $header_styles = $this->normalizeStyles($this->header_styles);
+        $header_styles = $this->normalizeStyles($this->header_styles);
 
-        // foreach ($this->header_rows as $index => $row) {
+        foreach ($this->header_rows as $index => $row) {
 
-        //     $line = $index+1;
+            $line = $index+1;
 
-        //     $this->getActiveSheet()->insertNewRowBefore($line, 1);
+            $this->getActiveSheet()->insertNewRowBefore($line, 1);
 
-        //     $styles = count($row['styles'])>0 
-        //         ? $row['styles'] 
-        //         : $header_styles;
+            $styles = count($row['styles'])>0 
+                ? $row['styles'] 
+                : $header_styles;
 
 
-        //     $content = $this->parseHtmlText($row['content'], $styles);
-        //     $colspan = is_numeric($row['colspan']) 
-        //         ? $this->getColumnVowel($row['colspan'])
-        //         : $this->getLastColumn();
+            $content = $this->parseHtmlText($row['content'], $styles);
+            $colspan = is_numeric($row['colspan']) 
+                ? $this->getColumnVowel($row['colspan'])
+                : $this->getLastColumn();
 
-        //     $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
-        //     $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
+            $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
+            $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
 
-        //     $this->applyStyles($this->getActiveSheet()->getStyle("A{$line}"), $styles);
-        // }
+            $this->applyStyles('header', $line, 1);
+        }
     }
 
     // private function setupDefaultStyles()
@@ -839,7 +837,7 @@ class Collector
 
         $this->setupBody();
 
-        //$this->setupHeader();
+        $this->setupHeader();
 
         //$this->setupDefaultStyles();
 
