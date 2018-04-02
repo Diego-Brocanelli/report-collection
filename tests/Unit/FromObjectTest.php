@@ -6,7 +6,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReportCollection\Tests\Libs;
 
-class ImportObjectTest extends TestCase
+class FromObjectTest extends TestCase
 {
     public function testImportSimpleObject()
     {

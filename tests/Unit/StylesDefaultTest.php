@@ -20,7 +20,7 @@ class StylesDefaultTest extends TestCase
 
 
         $handle = \ReportCollection::createFromFile($file);
-        $handle->setStyles('body', $default);
+        $handle->setBodyStyles($default);
         $handle->save($xls_style_custom);
 
 

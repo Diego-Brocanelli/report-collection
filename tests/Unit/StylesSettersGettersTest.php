@@ -10,8 +10,8 @@ class StylesSettersGettersTest extends TestCase
     public function testStyles()
     {
         // Estilos padrões empre existem
-        $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
-        $default       = $handle->getStyles();
+        $handle  = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
+        $default = $handle->getStyles();
         $this->assertTrue(count($default)>0);
 
 
@@ -34,10 +34,10 @@ class StylesSettersGettersTest extends TestCase
         // e adiciona os padrões se não forem setados no header ou body
         $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
 
-        $handle->setStyles('header', [
+        $handle->setHeaderStyles([
             'estilo-errado' => '#222222'
         ]);
-        $handle->setStyles('body', [
+        $handle->setBodyStyles([
             'estilo-errado' => '#222222'
         ]);
 
@@ -55,7 +55,7 @@ class StylesSettersGettersTest extends TestCase
         // completa com os padrões padrões
         $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
 
-        $handle->setStyles('header', [
+        $handle->setHeaderStyles([
             'color' => '#222222'
         ]);
 

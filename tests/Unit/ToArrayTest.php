@@ -5,9 +5,9 @@ namespace ReportCollection\Tests\Unit;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class ImportArrayTest extends TestCase
+class ToArrayTest extends TestCase
 {
-    public function testImportArray()
+    public function testSave()
     {
         $provider = array(
             ["Company", "Contact", "Country"],

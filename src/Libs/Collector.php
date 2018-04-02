@@ -10,10 +10,13 @@ use Illuminate\Support\Str;
 
 class Collector
 {
+    /** @var ReportCollection\Libs\Collector */
     private static $instance = null;
 
+    /** @var PhpOffice\PhpSpreadsheet\Spreadsheet */
     private $buffer = null;
 
+    /** @var array */
     private $readers = [
         'csv'      => 'Csv',
         'gnumeric' => 'Gnumeric',
@@ -26,6 +29,7 @@ class Collector
         'xml'      => 'Xml'
     ];
 
+    /** @var array */
     private $writers = [
         'csv'      => 'Csv',
         'htm'      => 'Html',
@@ -37,13 +41,16 @@ class Collector
         'xml'      => 'Xml'
     ];
 
-
+    /** @var string */
     private $title = 'Report Document';
 
+    /** @var string */
     private $header_logo = null;
 
+    /** @var array */
     private $header_rows = [];
 
+    /** @var array */
     private $default_styles = [
         'background-color-odd'  => '#ffffff', // ímpar
         'background-color-even' => '#f5f5f5', // par
@@ -68,16 +75,22 @@ class Collector
         'text-align'            => 'left',
     ];
 
+    /** @var array */
     private $header_styles = [];
 
+    /** @var array */
     private $body_styles = [];
 
+    /** @var array */
     public $debug = [];
 
-    // Para controlar odd e even
+    /** @var int Para controlar odd e even */
     private $row_control = 1;
 
+    /** @var int Lazy Load */
     private $last_col = null;
+
+    /** @var string Lazy Load*/
     private $last_row = null;
 
     //
@@ -124,7 +137,7 @@ class Collector
     }
 
     /**
-     * Cria uma planilha a partir de código html
+     * Cria uma planilha a partir de um trecho de código html
      * 
      * @param string $string
      */
@@ -143,6 +156,11 @@ class Collector
         return self::$instance;
     }
 
+    /**
+     * Cria uma planilha a partir de um array
+     * 
+     * @param array $array
+     */
     public static function createFromArray(array $array)
     {
         self::$instance = new self;
@@ -161,6 +179,18 @@ class Collector
         return self::$instance;
     }
 
+    /**
+     * Cria uma planilha a partir de um objeto.
+     * O objeto deve:
+     * 
+     * Implementar o método toArray()
+     * ou
+     * Ser iterável
+     * ou
+     * Ser passível de conversão para array (via atributos)
+     * 
+     * @param mixed $object
+     */
     public static function createFromObject($object)
     {
         self::$instance = new self;
@@ -205,30 +235,40 @@ class Collector
     // Informações da planilha
     //
 
+    /**
+     * @return PhpOffice\PhpSpreadsheet\Spreadsheet
+     */
     public function getSpreadsheetObject()
     {
         return $this->buffer;
     }
 
+    /**
+     * @return PhpOffice\PhpSpreadsheet\Worksheet\Worksheet
+     */
     public function getActiveSheet()
     {
         return $this->getSpreadsheetObject()->getActiveSheet();
     }
 
     /**
-     * Ex: 10
+     * Devolve a última linha da planilha.
+     * 
+     * @return int Ex: 10
      */
     public function getLastRow() 
     {
         if($this->last_row == null) {
-            $this->last_row = $this->getActiveSheet()->getHighestRow();
+            $this->last_row = (int) $this->getActiveSheet()->getHighestRow();
         }
 
         return $this->last_row;
     }
 
     /**
-     * Ex: H
+     * Devolve a última coluna da planilha.
+     * 
+     * @return string Ex: H
      */
     public function getLastColumn() 
     {
@@ -239,80 +279,29 @@ class Collector
         return $this->last_col;
     }
 
-    private function getColumnVowel($number)
-    {
-        $num = intval($number)-1;
-        $map = range('A', 'Z');
-        // TODO: adicionar + alfabetos 'AA .. DA, DB'
-        return isset($map[$num]) ? $map[$num] : $this->getLastColumn();
-    }
-
-    private function getColumnNumber($vowel)
-    {
-        $map = range('A', 'Z');
-        $map = array_flip($map);
-        // TODO: adicionar + alfabetos 'AA .. DA, DB'
-        return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
-    }
-
-
     //
-    // Cabeçalho da Planilha
-    //
-
-    public function setHeaderLogo($filename)
-    {
-        if (!is_file($filename)) {
-            throw new \InvalidArgumentException("FIle is not exists.");
-        }
-
-        $this->header_logo = $filename;
-    }
-
-    public function addHeaderRow($content, $colspan = 'auto', array $styles = [])
-    {
-        $this->header_rows[] = [
-            'content' => $content,
-            'colspan' => $colspan,
-            'styles'  => $this->normalizeStyles($styles)
-        ];
-    }
-
-    private function getHeaderNumRows()
-    {
-        return count($this->header_rows);
-    }
-
-
-    //
-    // Aparencia da Planilha
+    // Estilos
     //
 
     /**
+     * Seta estilos para personalizar o cabeçalho da planilha.
+     * 
      * @return array
      */
-    public function normalizeStyles(array $styles)
+    public function setHeaderStyles(array $styles)
     {
-        $clean_styles = [];
-
-        foreach($this->default_styles as $attr => $value) {
-
-            $clean_styles[$attr] = isset($styles[$attr])
-                ? $styles[$attr] 
-                : $value;
-        }
-
-        return $clean_styles;
+        $this->setStyles('header', $styles);
+        return $this;
     }
 
-    public function setStyles($target, array $styles)
+    /**
+     * Seta estilos para personalizar o corpo da planilha.
+     * 
+     * @return array
+     */
+    public function setBodyStyles(array $styles)
     {
-        if ($target == 'body') {
-            $this->body_styles = $styles;
-        } else {
-            $this->header_styles = $styles;
-        }
-
+        $this->setStyles('body', $styles);
         return $this;
     }
 
@@ -336,106 +325,31 @@ class Collector
         }
     }
 
-    /**
-     * @return array
-     */
-    public function setHeaderStyles(array $styles)
+    //
+    // Header
+    //
+
+    public function setHeaderLogo($filename)
     {
-        $this->setStyles('header', $styles);
-        return $this;
+        if (!is_file($filename)) {
+            throw new \InvalidArgumentException("File is not exists.");
+        }
+
+        $this->header_logo = $filename;
     }
 
-    /**
-     * @return array
-     */
-    public function setBodyStyles(array $styles)
+    public function addHeaderRow($content, $colspan = 'auto', array $styles = [])
     {
-        $this->setStyles('body', $styles);
-        return $this;
+        $this->header_rows[] = [
+            'content' => $content,
+            'colspan' => $colspan,
+            'styles'  => $this->normalizeStyles($styles)
+        ];
     }
 
-    /**
-     * @return \PhpOffice\PhpSpreadsheet\RichText\RichText
-     */
-    public function parseHtmlText($string, array $styles = [])
+    private function getHeaderNumRows()
     {
-        $styles = $this->normalizeStyles($styles);
-
-        $string = "" . $string;
-
-        // https://phpspreadsheet.readthedocs.io/en/develop/topics/recipes/#add-rich-text-to-a-cell
-
-        // Encontra as tags b, u, i
-        $richs = [];
-        preg_match_all("/<[b|u|i|s]>(.*?)<\/[b|u|i|s]>/", $string, $richs);
-
-        // Separa o texto em partes
-        $strips = [];
-        $strip_styles = [];
-        $last = '';
-        foreach ($richs[0] as $index => $tagged) {
-
-            $split = explode($tagged, $string);
-            $strips[] = $split[0]; // adicona conteudo texto anterior à tag
-            $strip_styles[] = 't';
-            $strips[] = $richs[1][$index]; // adiciona conteudo da tag
-            $strip_styles[] = substr($tagged, 1, 1);
-            $string = $split[1]; // atualiza a string             
-        }
-
-        if (!empty($string)) {
-            $strips[] = $string; // adicona conteudo texto anterior à tag
-            $strip_styles[] = 't';
-        }
-
-        $text = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
-
-        $this->debug['parseHtmlText'] = implode('', $strips);
-
-        $hex = 'FF' . trim(strtoupper($styles['color']), '#');
-        $color = new \PhpOffice\PhpSpreadsheet\Style\Color($hex);
-
-        foreach ($strips as $k => $value) {
-
-            switch($strip_styles[$k]) {
-                case 't':
-                    $t = $text->createTextRun($value);
-                    $t->getFont()->setColor($color);
-                    $t->getFont()->setName($styles['font-face']);
-                    $t->getFont()->setSize($styles['font-size']);
-                    break;
-                case 'b':
-                    $b = $text->createTextRun($value);
-                    $b->getFont()->setBold(true);
-                    $b->getFont()->setColor($color);
-                    $b->getFont()->setName($styles['font-face']);
-                    $b->getFont()->setSize($styles['font-size']);
-                    break;
-                case 'i':
-                    $i = $text->createTextRun($value);
-                    $i->getFont()->setItalic(true);
-                    $i->getFont()->setColor($color);
-                    $i->getFont()->setName($styles['font-face']);
-                    $i->getFont()->setSize($styles['font-size']);
-                    break;
-                case 'u':
-                    $u = $text->createTextRun($value);
-                    $u->getFont()->setUnderline(true);
-                    $u->getFont()->setColor($color);
-                    $u->getFont()->setName($styles['font-face']);
-                    $u->getFont()->setSize($styles['font-size']);
-                    break;
-                case 's':
-                    $s = $text->createTextRun($value);
-                    $s->getFont()->setStrikethrough(true);
-                    $s->getFont()->setColor($color);
-                    $s->getFont()->setName($styles['font-face']);
-                    $s->getFont()->setSize($styles['font-size']);
-                    break;
-            }
-        }
-
-        return $text;
+        return count($this->header_rows);
     }
 
 
@@ -443,53 +357,72 @@ class Collector
     // Formatação
     //
 
-    private function debugStyle($range, $param, $value, $type = 'cell')
+    /**
+     * Prepara e configura a planilha.
+     */
+    private function setupSpreadsheet()
     {
-        // Armazena as informações para os testes de unidade
-        if (!isset($this->debug['applyStyles'])) {
-            $this->debug['applyStyles'] = [];
-            $this->debug['applyStyles']['default'] = [];
-            $this->debug['applyStyles']['cells'] = [];
-            $this->debug['applyStyles']['rows'] = [];
-        }
-
-        if (!isset($this->debug['applyStyles']['cells'][$range])) {
-            $this->debug['applyStyles']['cells'][$range] = [];
-        }
-
-        if ($type == 'default') {
-            $this->debug['applyStyles']['default'][$param] = $value;
-        }
-        elseif ($type == 'cell') {
-            $this->debug['applyStyles']['cells'][$range][$param] = $value;
-        }
-        else {
-            $this->debug['applyStyles']['rows'][$range][$param] = $value;
-        }
+        $this->applyStyles('default');
     }
 
-    private function getMappedBorderStyle($param)
+    /**
+     * Prepara e configura o corpo da planilha.
+     */
+    private function setupBody()
     {
-        $map = [
-            'none'                => Style\Border::BORDER_NONE, 
-            'dash-dot'            => Style\Border::BORDER_DASHDOT, 
-            'dash-dot-dot'        => Style\Border::BORDER_DASHDOTDOT, 
-            'dashed'              => Style\Border::BORDER_DASHED, 
-            'dotted'              => Style\Border::BORDER_DOTTED, 
-            'double'              => Style\Border::BORDER_DOUBLE, 
-            'hair'                => Style\Border::BORDER_HAIR, 
-            'medium'              => Style\Border::BORDER_MEDIUM, 
-            'medium-dash-dot'     => Style\Border::BORDER_MEDIUMDASHDOT, 
-            'medium-dash-dot-dot' => Style\Border::BORDER_MEDIUMDASHDOTDOT, 
-            'medium-dashed'       => Style\Border::BORDER_MEDIUMDASHED, 
-            'slant-dash-dot'      => Style\Border::BORDER_SLANTDASHDOT, 
-            'thick'               => Style\Border::BORDER_THICK, 
-            'thin'                => Style\Border::BORDER_THIN,
-        ];
+        // Range
+        $start_row = 1;
+        $ended_row = $this->getLastRow();
+        $start_col = 1;
+        $ended_col = $this->getLastColumn();
 
-        return isset($map[$param]) 
-            ? $map[$param] 
-            : Style\Border::BORDER_NONE;
+        //$range = 'A' . $start_row . ':' . $this->getLastColumn() . $ended_row;
+
+        // Para controlar odd e even
+        $this->row_control = 0;
+
+        // Aplica os estilos a cada célula independente
+        for ($row=$start_row; $row<=$ended_row; $row++) {
+
+            for ($col=1; $col<=$ended_row; $col++) {
+                $this->applyStyles('body', $row, $col);
+            }
+            $this->row_control++;
+        }
+    }    
+
+    /**
+     * Prepara e configura o cabeçalho da planilha.
+     */
+    private function setupHeader()
+    {
+        if ($this->getHeaderNumRows() == 0) {
+            return false;
+        }
+
+        $header_styles = $this->normalizeStyles($this->header_styles);
+
+        foreach ($this->header_rows as $index => $row) {
+
+            $line = $index+1;
+
+            $this->getActiveSheet()->insertNewRowBefore($line, 1);
+
+            $styles = count($row['styles'])>0 
+                ? $row['styles'] 
+                : $header_styles;
+
+
+            $content = $this->parseHtmlText($row['content'], $styles);
+            $colspan = is_numeric($row['colspan']) 
+                ? $this->getColumnVowel($row['colspan'])
+                : $this->getLastColumn();
+
+            $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
+            $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
+
+            $this->applyStyles('header', $line, 1);
+        }
     }
 
     private function applyStyles($target, $row = null, $col = null, array $forced_styles = null)
@@ -701,107 +634,102 @@ class Collector
         }
     }
 
-    private function setupSpreadsheet()
+    /**
+     * Interpreta o conteúdo de uma string e aplica os estilos 
+     * de acordo com as tags informadas
+     * 
+     * @return \PhpOffice\PhpSpreadsheet\RichText\RichText
+     */
+    public function parseHtmlText($string, array $styles = [])
     {
-        $this->applyStyles('default');
-    }
+        $styles = $this->normalizeStyles($styles);
 
-    private function setupBody()
-    {
-        // Range
-        $start_row = 1;
-        $ended_row = $this->getLastRow();
-        $start_col = 1;
-        $ended_col = $this->getLastColumn();
+        $string = "" . $string;
 
-        //$range = 'A' . $start_row . ':' . $this->getLastColumn() . $ended_row;
+        // https://phpspreadsheet.readthedocs.io/en/develop/topics/recipes/#add-rich-text-to-a-cell
 
-        // Para controlar odd e even
-        $this->row_control = 0;
+        // Encontra as tags b, u, i
+        $richs = [];
+        preg_match_all("/<[b|u|i|s]>(.*?)<\/[b|u|i|s]>/", $string, $richs);
 
-        // Aplica os estilos a cada célula independente
-        for ($row=$start_row; $row<=$ended_row; $row++) {
+        // Separa o texto em partes
+        $strips = [];
+        $strip_styles = [];
+        $last = '';
+        foreach ($richs[0] as $index => $tagged) {
 
-            for ($col=1; $col<=$ended_row; $col++) {
-                $this->applyStyles('body', $row, $col);
+            $split = explode($tagged, $string);
+            $strips[] = $split[0]; // adicona conteudo texto anterior à tag
+            $strip_styles[] = 't';
+            $strips[] = $richs[1][$index]; // adiciona conteudo da tag
+            $strip_styles[] = substr($tagged, 1, 1);
+            $string = $split[1]; // atualiza a string             
+        }
+
+        if (!empty($string)) {
+            $strips[] = $string; // adicona conteudo texto anterior à tag
+            $strip_styles[] = 't';
+        }
+
+        $text = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
+
+        $this->debug['parseHtmlText'] = implode('', $strips);
+
+        $hex = 'FF' . trim(strtoupper($styles['color']), '#');
+        $color = new \PhpOffice\PhpSpreadsheet\Style\Color($hex);
+
+        foreach ($strips as $k => $value) {
+
+            switch($strip_styles[$k]) {
+                case 't':
+                    $t = $text->createTextRun($value);
+                    $t->getFont()->setColor($color);
+                    $t->getFont()->setName($styles['font-face']);
+                    $t->getFont()->setSize($styles['font-size']);
+                    break;
+                case 'b':
+                    $b = $text->createTextRun($value);
+                    $b->getFont()->setBold(true);
+                    $b->getFont()->setColor($color);
+                    $b->getFont()->setName($styles['font-face']);
+                    $b->getFont()->setSize($styles['font-size']);
+                    break;
+                case 'i':
+                    $i = $text->createTextRun($value);
+                    $i->getFont()->setItalic(true);
+                    $i->getFont()->setColor($color);
+                    $i->getFont()->setName($styles['font-face']);
+                    $i->getFont()->setSize($styles['font-size']);
+                    break;
+                case 'u':
+                    $u = $text->createTextRun($value);
+                    $u->getFont()->setUnderline(true);
+                    $u->getFont()->setColor($color);
+                    $u->getFont()->setName($styles['font-face']);
+                    $u->getFont()->setSize($styles['font-size']);
+                    break;
+                case 's':
+                    $s = $text->createTextRun($value);
+                    $s->getFont()->setStrikethrough(true);
+                    $s->getFont()->setColor($color);
+                    $s->getFont()->setName($styles['font-face']);
+                    $s->getFont()->setSize($styles['font-size']);
+                    break;
             }
-            $this->row_control++;
-        }
-    }    
-
-    private function setupHeader()
-    {
-        if ($this->getHeaderNumRows() == 0) {
-            return false;
         }
 
-        $header_styles = $this->normalizeStyles($this->header_styles);
-
-        foreach ($this->header_rows as $index => $row) {
-
-            $line = $index+1;
-
-            $this->getActiveSheet()->insertNewRowBefore($line, 1);
-
-            $styles = count($row['styles'])>0 
-                ? $row['styles'] 
-                : $header_styles;
-
-
-            $content = $this->parseHtmlText($row['content'], $styles);
-            $colspan = is_numeric($row['colspan']) 
-                ? $this->getColumnVowel($row['colspan'])
-                : $this->getLastColumn();
-
-            $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
-            $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
-
-            $this->applyStyles('header', $line, 1);
-        }
+        return $text;
     }
-
-    // private function setupDefaultStyles()
-    // {
-    //     $this->getActiveSheet()->getDefaultRowDimension()
-    //         ->setRowHeight($this->default_styles['line-height']);
-
-    //     $this->applyStyles($this->getSpreadsheetObject()->getDefaultStyle(), $this->default_styles);
-    // }
-
-    // private function setupHeaderStyles()
-    // {
-    //     $rows = $this->getHeaderNumRows();
-    //     if ($rows == 0) {
-    //         return false;
-    //     }
-
-    //     $range = 'A1:' . $this->getLastColumn() . $rows;
-
-    //     // Altura das linhas
-    //     for($x=1; $x <= $rows; $x++) {
-    //         $this->getActiveSheet()
-    //              ->getRowDimension($x)
-    //              ->setRowHeight($this->header_styles['line-height']);
-    //     }
-
-    //     //$this->applyStyles($this->getActiveSheet()->getStyle($range), $this->header_styles);
-
-
-    //     $value = 'FF' . trim($this->header_styles['background-color-odd'], '#');
-    //     $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-    //     $this->getActiveSheet()->getStyle($range)->getFill()
-    //                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-    //                 ->setStartColor($color);
-
-        
-    // }
-
-    
 
     //
     // Exportação
     //
 
+    /**
+     * Devolve os dados da planilha em forma de array.
+     * 
+     * @return array
+     */
     public function toArray()
     {
         // Planilhas do Gnumeric e Xlsx
@@ -824,6 +752,34 @@ class Collector
     }
 
     /**
+     * Devolve os dados da planilha em forma de xml.
+     * 
+     * @return string
+     */
+    public function toXml()
+    {
+        $data = $this->toArray();
+
+        $writer = new \SimpleXMLElement('<Table/>');
+        $headers = [];
+        foreach ($data as $index => $item) {
+
+            if ($index==0) {
+                $headers = $item;
+            }
+            $child = $writer->addChild('Row');
+            foreach ($headers as $k => $name) {
+                $child->addChild('Cell', $item[$k]);
+            }
+        }
+        
+        $dom = dom_import_simplexml($writer)->ownerDocument;
+        $dom->formatOutput = true;
+        // $dom->save($filename);
+        return $dom->saveXML();
+    }
+
+    /**
      * Salva a planilha em um formato especifico.
      * As extensões suportadas são:
      * csv, html, ods, pdf, xls e xlsx
@@ -839,14 +795,6 @@ class Collector
 
         $this->setupHeader();
 
-        //$this->setupDefaultStyles();
-
-        
-
-        //$this->setupHeaderStyles();
-
-        // Prepara para salvar
-
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
         $writer = null;
@@ -854,40 +802,14 @@ class Collector
 
             if (Str::lower($extension) == $slug && $slug == 'pdf') {
 
-                $writer = IOFactory::createWriter($this->getSpreadsheetObject(), 'Mpdf');
+                IOFactory::registerWriter('CustomPDF', PDFWriter::class);
+                $writer = IOFactory::createWriter($this->getSpreadsheetObject(), 'CustomPDF');
                 $writer->save($filename);
 
-            }
-            elseif (Str::lower($extension) == $slug && $slug == 'xml') {
-
-                // $writer = IOFactory::createWriter($this->getSpreadsheetObject(), 'Html');
-                // $data = explode('</style>', $writer->generateSheetData())[1];
-                // $data = preg_replace('#<col class="[a-zA-Z0-9]*">#', '', $data);
-                // file_put_contents($filename, $data);
-                
-                $data = $this->toArray();
-                $writer = new \SimpleXMLElement('<Table/>');
-                $headers = [];
-                foreach ($data as $index => $item) {
-
-                    if ($index==0) {
-                        $headers = $item;
-                    }
-                    $child = $writer->addChild('Row');
-                    foreach ($headers as $k => $name) {
-                        $child->addChild('Cell', $item[$k]);
-                    }
-                }
-                
-                $dom = dom_import_simplexml($writer)->ownerDocument;
-                $dom->formatOutput = true;
-                $dom->save($filename);
-            }
-            elseif (Str::lower($extension) == $slug) {
+            } elseif (Str::lower($extension) == $slug) {
 
                 $writer = IOFactory::createWriter($this->getSpreadsheetObject(), $base);
                 $writer->save($filename);
-                
             }
         }
 
@@ -899,6 +821,13 @@ class Collector
         return $this;
     }
 
+    /**
+     * Força o download da planilha em um formato especifico.
+     * As extensões suportadas são:
+     * csv, html, ods, pdf, xls e xlsx
+     * 
+     * @param string $filename Nome do arquivo com extensão
+     */
     public function download($filename)
     {
         $basename = pathinfo($filename, PATHINFO_BASENAME);
@@ -945,5 +874,130 @@ class Collector
 
         $this->save('php://output');
         exit;
+    }
+
+    //
+    // Helpers
+    //
+
+    /**
+     * Armazena informações de debug
+     */
+    private function debugStyle($range, $param, $value, $type = 'cell')
+    {
+        // Armazena as informações para os testes de unidade
+        if (!isset($this->debug['applyStyles'])) {
+            $this->debug['applyStyles'] = [];
+            $this->debug['applyStyles']['default'] = [];
+            $this->debug['applyStyles']['cells'] = [];
+            $this->debug['applyStyles']['rows'] = [];
+        }
+
+        if (!isset($this->debug['applyStyles']['cells'][$range])) {
+            $this->debug['applyStyles']['cells'][$range] = [];
+        }
+
+        if ($type == 'default') {
+            $this->debug['applyStyles']['default'][$param] = $value;
+        }
+        elseif ($type == 'cell') {
+            $this->debug['applyStyles']['cells'][$range][$param] = $value;
+        }
+        else {
+            $this->debug['applyStyles']['rows'][$range][$param] = $value;
+        }
+    }
+
+    /**
+     * Seta os estilos para o cabeçalho ou para o corpo da planilha.
+     * 
+     * @param string $target header|body
+     * @param array $styles
+     */
+    protected function setStyles($target, array $styles)
+    {
+        if ($target == 'body') {
+            $this->body_styles = $styles;
+        } else {
+            $this->header_styles = $styles;
+        }
+    }
+
+    /**
+     * Devolve o parâmetro correto de uma borda, com base 
+     * nas constantes da biblioteca PHPSpreadsheet
+     * 
+     * @return string
+     */
+    private function getMappedBorderStyle($param)
+    {
+        $map = [
+            'none'                => Style\Border::BORDER_NONE, 
+            'dash-dot'            => Style\Border::BORDER_DASHDOT, 
+            'dash-dot-dot'        => Style\Border::BORDER_DASHDOTDOT, 
+            'dashed'              => Style\Border::BORDER_DASHED, 
+            'dotted'              => Style\Border::BORDER_DOTTED, 
+            'double'              => Style\Border::BORDER_DOUBLE, 
+            'hair'                => Style\Border::BORDER_HAIR, 
+            'medium'              => Style\Border::BORDER_MEDIUM, 
+            'medium-dash-dot'     => Style\Border::BORDER_MEDIUMDASHDOT, 
+            'medium-dash-dot-dot' => Style\Border::BORDER_MEDIUMDASHDOTDOT, 
+            'medium-dashed'       => Style\Border::BORDER_MEDIUMDASHED, 
+            'slant-dash-dot'      => Style\Border::BORDER_SLANTDASHDOT, 
+            'thick'               => Style\Border::BORDER_THICK, 
+            'thin'                => Style\Border::BORDER_THIN,
+        ];
+
+        return isset($map[$param]) 
+            ? $map[$param] 
+            : Style\Border::BORDER_NONE;
+    }
+
+    /**
+     * Converte uma coluna numérica para as vogais correspondentes.
+     * 
+     * @param int $number
+     * @return string
+     */
+    private function getColumnVowel($number)
+    {
+        $num = intval($number)-1;
+        $map = range('A', 'Z');
+        // TODO: adicionar + alfabetos 'AA .. DA, DB'
+        return isset($map[$num]) ? $map[$num] : $this->getLastColumn();
+    }
+
+    /**
+     * Converte uma coluna de vogais para um valor numérico.
+     * 
+     * @param string $vowel
+     * @return int
+     */
+    private function getColumnNumber($vowel)
+    {
+        $map = range('A', 'Z');
+        $map = array_flip($map);
+        // TODO: adicionar + alfabetos 'AA .. DA, DB'
+        return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
+    }
+
+    /**
+     * Normaliza os estilos especificados, adicionando os 
+     * estilos padrões quando estes não estiverem presentes.
+     * 
+     * @return array
+     */
+    public function normalizeStyles(array $styles)
+    {
+        $clean_styles = [];
+
+        foreach($this->default_styles as $attr => $value) {
+
+            $clean_styles[$attr] = isset($styles[$attr])
+                ? $styles[$attr] 
+                : $value;
+        }
+
+        return $clean_styles;
     }
 }
