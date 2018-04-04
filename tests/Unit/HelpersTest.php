@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class HelpersTest extends TestCase
 {
-    public function testParsing()
+    public function testColumnVowel()
     {
         $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
 
@@ -23,5 +23,23 @@ class HelpersTest extends TestCase
         $this->assertEquals('A', $handle->getColumnVowel('A'));
         $this->assertEquals('Z', $handle->getColumnVowel('Z'));
         $this->assertEquals('ZA', $handle->getColumnVowel('ZA'));
+    }
+
+    public function testColumnNumber()
+    {
+        $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
+
+        $alpha = 26; // numero de letras no alfabeto
+
+        $this->assertEquals(1, $handle->getColumnNumber('A'));
+        $this->assertEquals($alpha, $handle->getColumnNumber('Z'));
+        $this->assertEquals($alpha + 1, $handle->getColumnNumber('AA'));
+        $this->assertEquals($alpha * 2, $handle->getColumnNumber('AZ'));
+        $this->assertEquals($alpha * 2 + 1, $handle->getColumnNumber('BA'));
+        $this->assertEquals($alpha * 3, $handle->getColumnNumber('BZ'));
+
+        $this->assertEquals(1, $handle->getColumnNumber(1));
+        $this->assertEquals($alpha, $handle->getColumnNumber(26));
+        $this->assertEquals(49, $handle->getColumnNumber(49));
     }
 }

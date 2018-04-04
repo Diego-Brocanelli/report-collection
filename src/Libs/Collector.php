@@ -1016,10 +1016,21 @@ class Collector
             return (int) $vowel;
         }
 
+        // alfabeto
         $map = range('A', 'Z');
         $map = array_flip($map);
-        // TODO: adicionar + alfabetos 'AA .. DA, DB'
-        return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
+        $vowels = count($map);
+
+        if (strlen($vowel) == 1) {
+
+            return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
+
+        } else {
+            
+            $iterations = isset($map[$vowel[0]]) ? $map[$vowel[0]]+1 : 1;
+            $number = isset($map[$vowel[1]]) ? $map[$vowel[1]]+1 : 1;
+            return $number + $vowels*$iterations;
+        }
     }
 
     /**
