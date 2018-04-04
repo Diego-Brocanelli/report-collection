@@ -425,11 +425,31 @@ class Collector
         }
     }
 
-    private function applyStyles($target, $row = null, $col = null, array $forced_styles = null)
+    private function getTargetObject($target, $row = null, $col = null)
     {
-        $styles = $forced_styles==null
+        if ($target == 'default') {
+
+            $object = $this->getSpreadsheetObject()->getDefaultStyle();
+
+        } else {
+
+            // body|header
+
+            $row = ($row == null) ? 1 : $row;
+            $col = ($col == null) ? $this->getLastColumn() : $col;
+            $range = $this->getColumnVowel($col).$row;
+
+            $object = $this->getActiveSheet()->getStyle($range);
+        }
+
+        return $object;
+    }
+
+    private function applyStyles($target, $row = null, $col = null, array $styles = null)
+    {
+        $styles = $styles==null
             ? $this->getStyles($target)
-            : $forced_styles;
+            : $styles;
 
         if ($target == 'default') {
             $range     = null;
@@ -959,12 +979,29 @@ class Collector
      * @param int $number
      * @return string
      */
-    private function getColumnVowel($number)
+    public function getColumnVowel($number)
     {
-        $num = intval($number)-1;
+        if (!is_int($number) && !is_numeric($number)) {
+            return $number;
+        }
+
+        $number = (int) $number;
+
+        // alfabeto
         $map = range('A', 'Z');
-        // TODO: adicionar + alfabetos 'AA .. DA, DB'
-        return isset($map[$num]) ? $map[$num] : $this->getLastColumn();
+        $vowels = count($map);
+
+        $number_one = (int) floor(($number-1)/$vowels);
+        $number_two = $number - $vowels*$number_one;
+
+        $vowel_one = $number_one>0 && isset($map[$number_one-1]) 
+            ? $map[$number_one-1] 
+            : '';
+
+        $vowel_two = isset($map[$number_two-1]) 
+            ? $map[$number_two-1] 
+            : $this->getLastColumn();
+        return $vowel_one . $vowel_two;
     }
 
     /**
@@ -973,8 +1010,12 @@ class Collector
      * @param string $vowel
      * @return int
      */
-    private function getColumnNumber($vowel)
+    public function getColumnNumber($vowel)
     {
+        if (is_numeric($vowel)) {
+            return (int) $vowel;
+        }
+
         $map = range('A', 'Z');
         $map = array_flip($map);
         // TODO: adicionar + alfabetos 'AA .. DA, DB'
