@@ -7,71 +7,125 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class StylesDefaultTest extends TestCase
 {
+    private function filename($prefix)
+    {
+        return tempnam(sys_get_temp_dir(), $prefix . '-') . '.xls';
+    }
     public function testStyles()
     {
         $file = __DIR__ . '/../Files/table.xls';
 
-        $xls_style_default = tempnam(sys_get_temp_dir(), 'style_default-') . '.xls';
-        $xls_style_custom  = tempnam(sys_get_temp_dir(), 'style_custom-') . '.xls';
+        // Padroes 
+        // ------------------------------------------------------------------
 
-        $handle = \ReportCollection::createFromFile($file);
+        $handle  = \ReportCollection::createFromFile($file);
         $default = $handle->getStyles();
-        $handle->save($xls_style_default);
+        $header  = $handle->getStyles('header');
+        $body    = $handle->getStyles('body');
 
+        $handle->save($this->filename('styles-default'));
+
+        $debug = $handle->getDebugInfo();
+        $default_styles = $debug['styles']['default'];
+        
+        $body_styles = $debug['styles']['body'];
+
+        $this->assertEquals($default['border-style-inside'], $header['border-style-inside']);
+        $this->assertEquals($default['border-style-outside'], $header['border-style-outside']);
+        $this->assertEquals($default['border-style-inside'], $body['border-style-inside']);
+        $this->assertEquals($default['border-style-outside'], $body['border-style-outside']);
+
+        $this->assertEquals($default['background-color-odd'], $default_styles['background']);
+        $this->assertEquals($default['background-color-odd'], $body_styles['A1']['background']);
+        $this->assertEquals($default['background-color-even'], $body_styles['A2']['background']);
+
+        // Setando padrões 
+        // ------------------------------------------------------------------
 
         $handle = \ReportCollection::createFromFile($file);
-        $handle->setBodyStyles($default);
-        $handle->save($xls_style_custom);
+        $handle->setBodyStyles($default_styles);
+        $handle->save($this->filename('styles-default-setted'));
 
+        $debug = $handle->getDebugInfo();
+        
+        $body_styles = $debug['styles']['body'];
 
+        $this->assertEquals($default['background-color-odd'], $default_styles['background']);
+        $this->assertEquals($default['background-color-odd'], $body_styles['A1']['background']);
+        $this->assertEquals($default['background-color-even'], $body_styles['A2']['background']);
 
-
+        // Estilos padrões com Cabeçalho
+        // ------------------------------------------------------------------
 
         $handle = \ReportCollection::createFromFile($file);
 
         $handle->addHeaderRow('<b>Report Collection</b>');
         $handle->addHeaderRow('<b>Autor</b>: Ricardo Pereira <u>Dias</u>');
         $handle->addHeaderRow('<i>Linguagem</i>: PHP não é <s>HTML</s>');
+        $handle->save($this->filename('styles-default-header'));
 
-        $handle->setHeaderStyles([
-            'background-color-odd'  => '#0000ff', // ímpar
-            'background-color-even' => '#0000ff', // par
-
-            'border-style-inside'   => 'thin',
-            'border-color-inside'   => '#ffffff',
-
-            'border-style-outside'   => 'thick',
-            'border-color-outside'  => '#ff0000',
-
-            'color'                 => '#ffffff',
-        ]);
-
-        $handle->save($xls_style_custom);
-
-        $this->assertTrue(true);
-
-        // $content_style_default = file_get_contents($xls_style_default);
-        // $content_style_custom  = file_get_contents($xls_style_custom);
-
-        // $this->assertEquals($content_style_default, $content_style_custom);
-
-        //dd($handle->debug['applyStyles']);
-
-        // $handle->setStyles('header', [
-        //     'color' => '#222222'
-        // ]);
-
-        // $default = $handle->getStyles();
-        // $total   = count($default);
-
-        // $header  = $handle->getStyles('header');
+        $debug = $handle->getDebugInfo();
         
-        // $this->assertCount($total, $header);
-        // $this->assertNotEquals($default, $header);
+        $body_styles = $debug['styles']['body'];
+        $header_styles = $debug['styles']['header'];
 
-        // // única diferença
-        // unset($default['color']);
-        // unset($header['color']);
-        // $this->assertEquals($default, $header);
+        $this->assertEquals($default['background-color-odd'], $default_styles['background']);
+        $this->assertEquals($default['background-color-odd'], $body_styles['A1']['background']);
+        $this->assertEquals($default['background-color-even'], $body_styles['A2']['background']);
+
+        $this->assertEquals($header['background-color-odd'], $header_styles['A1']['background']);
+        $this->assertEquals($header['background-color-even'], $header_styles['A2']['background']);
+
+        // Estilos personalizados com Cabeçalho
+        // ------------------------------------------------------------------
+
+        $handle = \ReportCollection::createFromFile($file);
+
+        $handle->addHeaderRow('<b>Report Collection</b>', ['background-color' => '#123456']);
+        $handle->addHeaderRow('<b>Autor</b>: Ricardo Pereira <u>Dias</u>', ['background-color' => '#654321']);
+        $handle->addHeaderRow('<i>Linguagem</i>: PHP não é <s>HTML</s>');
+
+        $handle->save($this->filename('styles-custom-header'));
+
+        $debug = $handle->getDebugInfo();
+        
+        $body_styles = $debug['styles']['body'];
+        $header_styles = $debug['styles']['header'];
+
+        $this->assertEquals($default['background-color-odd'], $default_styles['background']);
+        $this->assertEquals($default['background-color-odd'], $body_styles['A1']['background']);
+        $this->assertEquals($default['background-color-even'], $body_styles['A2']['background']);
+
+        $this->assertEquals('#123456', $header_styles['A1']['background']);
+        $this->assertEquals('#654321', $header_styles['A2']['background']);
+        $this->assertEquals($header['background-color-odd'], $header_styles['A3']['background']);
+
+
+        // Estilos personalizados intermitentes com Cabeçalho
+        // ------------------------------------------------------------------
+
+        $handle = \ReportCollection::createFromFile($file);
+
+        $handle->addHeaderRow('<b>Report Collection</b>', ['background-color-odd' => '#123456']);
+        $handle->addHeaderRow('<b>Autor</b>: Ricardo Pereira <u>Dias</u>', ['background-color-even' => '#654321']);
+        $handle->addHeaderRow('<i>Linguagem</i>: PHP não é <s>HTML</s>');
+
+        $handle->setHeaderStyles($default_styles);
+        $handle->setBodyStyles($default_styles);
+        $handle->save($this->filename('styles-custom-header-split'));
+
+        $debug = $handle->getDebugInfo();
+        
+        $body_styles = $debug['styles']['body'];
+        $header_styles = $debug['styles']['header'];
+
+        $this->assertEquals($default['background-color-odd'], $default_styles['background']);
+        $this->assertEquals($default['background-color-odd'], $body_styles['A1']['background']);
+        $this->assertEquals($default['background-color-even'], $body_styles['A2']['background']);
+
+        $this->assertEquals('#123456', $header_styles['A1']['background']); // odd
+        $this->assertEquals('#654321', $header_styles['A2']['background']); // even
+        $this->assertEquals($default['background-color-odd'], $header_styles['A3']['background']); // odd
+
     }
 }

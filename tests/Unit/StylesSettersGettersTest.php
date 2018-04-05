@@ -26,7 +26,6 @@ class StylesSettersGettersTest extends TestCase
 
         $this->assertCount($total, $header);
         $this->assertCount($total, $body);
-        $this->assertEquals($default, $header);
         $this->assertEquals($default, $body);
 
 
@@ -48,7 +47,6 @@ class StylesSettersGettersTest extends TestCase
 
         $this->assertCount($total, $header);
         $this->assertCount($total, $body);
-        $this->assertEquals($default, $header);
         $this->assertEquals($default, $body);
 
         // A normalização adiciona o estilo setado e 
@@ -66,6 +64,7 @@ class StylesSettersGettersTest extends TestCase
         
         $this->assertCount($total, $header);
         $this->assertNotEquals($default, $header);
+        $this->assertEquals('#222222', $header['color']);
 
         // única diferença
         unset($default['color']);

@@ -4,12 +4,81 @@ namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReportCollection\Libs\Collector;
+
+/**
+ * Esta implementação permite chamar métodos protegidos como se fosse publicos.
+ * Ideal para testes de unidade :)
+ */
+class ProtectedCollector extends Collector{
+
+    private $instance = null;
+
+    public function __construct()
+    {
+        $this->instance = self::createFromArray(array(["Company", "Contact", "Country"]));
+    }
+
+    public function __call($name, $arguments)
+    {
+        $args = array_fill(0, 6, true);
+        foreach($arguments as $index => $value) {
+            $args[$index] = $value;
+        }
+
+        if (method_exists($this->instance, $name)) {
+            return $this->instance->$name($args[0], $args[1], $args[2], $args[3], $args[4], $args[5]);
+        }
+    }
+}
 
 class HelpersTest extends TestCase
 {
+    public function testCreateColor()
+    {
+        $handle = new ProtectedCollector;
+
+        $object = $handle->createColor('#ee00ee');
+
+        $this->assertInstanceOf('PhpOffice\PhpSpreadsheet\Style\Color', $object);
+        $this->assertEquals('FFEE00EE', $object->getARGB());
+        $this->assertEquals('EE00EE', $object->getRGB());
+    }
+
+    public function testParseHexCode()
+    {
+        $handle = new ProtectedCollector;
+
+        // 8 digitos
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#ffffffff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('ffffffff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#FFFFFFFF'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('FFFFFFFF'));
+        $this->assertEquals('00FFFFFF', $handle->parseHex('00FffFFF'));
+
+        // 6 digitos
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#ffffff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('ffffff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#FFFFFF'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('FFFFFF'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('FFffFF'));
+
+        // +3 digitos
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#fff6'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('fff2'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#FFF7'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('FfF9'));
+
+        // 3 digitos
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#fff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('fff'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('#FFF'));
+        $this->assertEquals('FFFFFFFF', $handle->parseHex('FfF'));
+    }
+
     public function testColumnVowel()
     {
-        $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
+        $handle = new ProtectedCollector;
 
         $alpha = 26; // numero de letras no alfabeto
 
@@ -27,7 +96,7 @@ class HelpersTest extends TestCase
 
     public function testColumnNumber()
     {
-        $handle = \ReportCollection::createFromArray(array(["Company", "Contact", "Country"]));
+        $handle = new ProtectedCollector;
 
         $alpha = 26; // numero de letras no alfabeto
 
@@ -41,5 +110,20 @@ class HelpersTest extends TestCase
         $this->assertEquals(1, $handle->getColumnNumber(1));
         $this->assertEquals($alpha, $handle->getColumnNumber(26));
         $this->assertEquals(49, $handle->getColumnNumber(49));
+    }
+
+    public function testNormalizeStyles()
+    {
+        $handle = new ProtectedCollector;
+
+        $defaults = $handle->getStyles();
+        $normalized = $handle->normalizeStyles([]);
+
+        $this->assertEquals($defaults, $normalized);
+        $this->assertEquals(count($defaults), count($normalized));
+
+        $normalized = $handle->normalizeStyles(['color' => '#ffffff']);
+        $this->assertNotEquals($defaults['color'], $normalized['color'] );
+        $this->assertEquals(count($defaults), count($normalized));
     }
 }
