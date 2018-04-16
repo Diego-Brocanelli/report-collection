@@ -82,6 +82,7 @@ class StylesSettersGettersTest extends TestCase
         
         $this->assertCount($total, $header);
         $this->assertNotEquals($default, $header);
+        $this->assertEquals('#222222', $header['color']);
 
         // única diferença
         unset($default['color']);

@@ -68,7 +68,7 @@ class Collector
         
         'color'                 => '#555555',
         'font-face'             => 'Arial',
-        'font-size'             => '12',
+        'font-size'             => '11',
         'font-weight'           => 'normal',
         'font-style'            => 'normal',
         'vertical-align'        => 'middle',
@@ -88,15 +88,15 @@ class Collector
     private $body_styles = [];
 
     /** @var array */
-    public $debug = [];
+    private static $debug = [];
 
-    /** @var int Para controlar odd e even */
-    private $row_control = 1;
+    /** @var int Para acessar o texto sem formatação */
+    private $last_text_content = null;
 
     /** @var int Lazy Load */
     private $last_col = null;
 
-    /** @var string Lazy Load*/
+    /** @var int Lazy Load*/
     private $last_row = null;
 
     //
@@ -120,7 +120,7 @@ class Collector
      */
     public static function createFromFile($filename, $force_extension = null)
     {
-        self::$instance = new self;
+        self::$instance = new Collector;
 
         $extension = ($force_extension!=null)
             ? $force_extension
@@ -144,6 +144,8 @@ class Collector
                 "Unsupported file type for reading. Use " . implode(',', self::$instance->readers));
         }
 
+        self::$debug = ['created_with' => __METHOD__];
+
         return self::$instance;
     }
 
@@ -154,7 +156,7 @@ class Collector
      */
     public static function createFromHtmlString($string)
     {
-        self::$instance = new self;
+        self::$instance = new Collector;
 
         // Cria um arquivo temporário
         $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
@@ -163,6 +165,8 @@ class Collector
         // Carrega o arquivo na planilha
         self::$instance->createFromFile($temp_file, 'html');
         unlink($temp_file);
+
+        self::$debug = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -174,7 +178,7 @@ class Collector
      */
     public static function createFromArray(array $array)
     {
-        self::$instance = new self;
+        self::$instance = new Collector;
 
         self::$instance->buffer = null;
 
@@ -186,6 +190,8 @@ class Collector
             );
 
         self::$instance->buffer = $spreadsheet;
+
+        self::$debug = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -204,7 +210,7 @@ class Collector
      */
     public static function createFromObject($object)
     {
-        self::$instance = new self;
+        self::$instance = new Collector;
 
         self::$instance->buffer = null;
 
@@ -238,6 +244,8 @@ class Collector
 
         self::$instance->buffer = $spreadsheet;
 
+        self::$debug = ['created_with' => __METHOD__];
+
         return self::$instance;
     }
 
@@ -265,7 +273,7 @@ class Collector
     /**
      * Devolve a última linha da planilha.
      * 
-     * @return int Ex: 10
+     * @return int
      */
     public function getLastRow() 
     {
@@ -279,12 +287,13 @@ class Collector
     /**
      * Devolve a última coluna da planilha.
      * 
-     * @return string Ex: H
+     * @return int
      */
     public function getLastColumn() 
     {
         if($this->last_col == null) {
-            $this->last_col = $this->getActiveSheet()->getHighestColumn();
+            $col = $this->getActiveSheet()->getHighestColumn();
+            $this->last_col = $this->getColumnNumber($col);
         }
 
         return $this->last_col;
@@ -301,7 +310,7 @@ class Collector
      */
     public function setHeaderStyles(array $styles)
     {
-        $this->setStyles('header', $styles);
+        $this->header_styles = $this->normalizeStyles($styles, 'header');
         return $this;
     }
 
@@ -312,7 +321,7 @@ class Collector
      */
     public function setBodyStyles(array $styles)
     {
-        $this->setStyles('body', $styles);
+        $this->body_styles = $this->normalizeStyles($styles, 'body');
         return $this;
     }
 
@@ -338,12 +347,12 @@ class Collector
         $this->header_logo = $filename;
     }
 
-    public function addHeaderRow($content, $colspan = 'auto', array $styles = [])
+    public function addHeaderRow($content, array $styles = [], $colspan = 'auto')
     {
         $this->header_rows[] = [
             'content' => $content,
             'colspan' => $colspan,
-            'styles'  => $this->normalizeStyles($styles)
+            'styles'  => $styles
         ];
     }
 
@@ -370,24 +379,15 @@ class Collector
      */
     private function setupBody()
     {
-        // Range
-        $start_row = 1;
         $ended_row = $this->getLastRow();
-        $start_col = 1;
         $ended_col = $this->getLastColumn();
 
-        //$range = 'A' . $start_row . ':' . $this->getLastColumn() . $ended_row;
-
-        // Para controlar odd e even
-        $this->row_control = 0;
-
         // Aplica os estilos a cada célula independente
-        for ($row=$start_row; $row<=$ended_row; $row++) {
+        for ($row=1; $row<=$ended_row; $row++) {
 
-            for ($col=1; $col<=$ended_row; $col++) {
+            for ($col=1; $col<=$ended_col; $col++) {
                 $this->applyStyles('body', $row, $col);
             }
-            $this->row_control++;
         }
     }    
 
@@ -396,32 +396,38 @@ class Collector
      */
     private function setupHeader()
     {
+        // Não existem linhas de cabeçalho
         if ($this->getHeaderNumRows() == 0) {
             return false;
         }
-
-        $header_styles = $this->normalizeStyles($this->header_styles);
 
         foreach ($this->header_rows as $index => $row) {
 
             $line = $index+1;
 
+            // Insere a nova linha
             $this->getActiveSheet()->insertNewRowBefore($line, 1);
 
-            $styles = count($row['styles'])>0 
-                ? $row['styles'] 
-                : $header_styles;
+            // A linha possui estilos personalizados?
+            $styles = count($row['styles'])>0 ? $row['styles'] : [];
+            $styles = $this->normalizeStyles($styles, 'header');
 
-
-            $content = $this->parseHtmlText($row['content'], $styles);
-            $colspan = is_numeric($row['colspan']) 
-                ? $this->getColumnVowel($row['colspan'])
-                : $this->getLastColumn();
-
+            // Mescla as colunas para criar as linhas de cabeçalho            
+            if ($row['colspan'] == 'auto') {
+                $row['colspan'] = $this->getLastColumn();
+            }
+            $colspan = $this->getColumnVowel($row['colspan']);
             $this->getActiveSheet()->mergeCells("A{$line}:{$colspan}{$line}");
+
+            // Adiciona o conteudo formatado na linha
+            $content = $this->parseHtmlText($row['content'], $styles);
             $this->getActiveSheet()->getCell("A{$line}")->setValue($content);
 
-            $this->applyStyles('header', $line, 1);
+            $this->debugStyle('header', $line, 1, 'text-content', $this->last_text_content);
+            $this->debugStyle('header', $line, 1, 'row-styles-setted', $row['styles']);
+
+            // Aplica os estilos
+            $this->applyStyles('header', $line, 1, $styles);
         }
     }
 
@@ -447,212 +453,444 @@ class Collector
 
     private function applyStyles($target, $row = null, $col = null, array $styles = null)
     {
-        $styles = $styles==null
-            ? $this->getStyles($target)
-            : $styles;
-
-        if ($target == 'default') {
-            $range     = null;
-            $type_cell = 'default';
-            $type_row  = 'default';
-            $object    = $this->getSpreadsheetObject()->getDefaultStyle();
-        }
-        else {
-
-            if($row == null || $col == null) {
-                throw new InvalidArgumentException("Arguments row and col can not be null");
-            }
-
-            $range     = $this->getColumnVowel($col).$row;
-            $type_cell = 'cell';
-            $type_row  = 'row';
-            $object    = $this->getActiveSheet()->getStyle($range);
+        // Quais estilos aplicar
+        if ($styles==null) {
+            $styles = $this->getStyles($target);
+        } else {
+            $styles = $this->normalizeStyles($styles);
+            $this->debugStyle($target, $row, $col, 'row-styles-normal', $styles);
         }
 
-        // Bordas
-        $inside_color_value = 'FF' . trim(strtoupper($styles['border-color-inside']), '#');
-        $inside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($inside_color_value);
-        $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
-
-        $outside_color_value = 'FF' . trim(strtoupper($styles['border-color-outside']), '#');
-        $outside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($outside_color_value);
-        $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
-
-        if ($target == 'body') {
-            $start_row = 1;
-            $ended_row = $this->getLastRow();
-            $ended_col = $this->getLastColumn();
-        }
-        elseif($target == 'header') {
-            $start_row = 1;
-            $ended_row = $this->getHeaderNumRows();
-            $ended_col = $this->getColumnVowel(1);
-        }
+        // Alvo da estilização
+        $object = $this->getTargetObject($target, $row, $col);
 
         foreach ($styles as $param => $value) {
 
-            $background_param = ($this->row_control%2 == 0)
-                ? 'background-color-odd' : 'background-color-even';
-
+            // Não será aplicado
             if ($value == 'none') {
                 continue;
             }
 
             switch($param) {
 
-                case 'border-style-inside':
-
-                    if ($target !== 'default') {
-
-                        if ($row > $start_row && $col <= $this->getColumnNumber($ended_col)) {
-                            $object->getBorders()->getTop()
-                                ->setBorderStyle($inside_style)
-                                ->setColor($inside_color);
-                        }
-
-                        if ($col > 1 && $col <= $this->getColumnNumber($ended_col)) {
-                            $object->getBorders()->getLeft()
-                                ->setBorderStyle($inside_style)
-                                ->setColor($inside_color);
-                        }
-                    }
-                    break;
-
-                case 'border-style-outside':
-
-                    if ($target !== 'default') {
-
-                        if ($row == $start_row && $col <= $this->getColumnNumber($ended_col)) {
-                            $object->getBorders()->getTop()
-                                ->setBorderStyle($outside_style)
-                                ->setColor($outside_color);
-                        }
-
-                        if ($row == $ended_row && $col <= $this->getColumnNumber($ended_col)) {
-                            $object->getBorders()->getBottom()
-                                ->setBorderStyle($outside_style)
-                                ->setColor($outside_color); 
-                        }
-
-                        if ($col == 1) {
-                            $object->getBorders()->getLeft()
-                                ->setBorderStyle($outside_style)
-                                ->setColor($outside_color);
-                        }
-
-                        if ($col == $this->getColumnNumber($ended_col)) {
-                            $object->getBorders()->getRight()
-                                ->setBorderStyle($outside_style)
-                                ->setColor($outside_color);
-                        }
-                    }
-                    break;
-
-                case 'background-color-odd':
-                // case 'background-color-even': <- even não é necessário pois o parametro é dinamico
-
-                    if ($styles[$background_param] == 'none') {
-                        continue;
-                    }
-
-                    if ($target !== 'default' && $col > $this->getColumnNumber($ended_col)) {
-                        continue;
-                    }
-                    
-                    $value = 'FF' . trim(strtoupper($styles[$background_param]), '#');
-                    $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-                    $object->getFill()
-                         ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-                         ->setStartColor($color);
-                    $this->debugStyle($range, 'background', str_replace('background-color-', '', $background_param).":".$value, $type_cell);
-                    break;
-
                 case 'color':
-                    $value = 'FF' . trim(strtoupper($value), '#');
-                    $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+                    $color = $this->createColor($value);
                     $object->getFont()->setColor($color);
-                    $this->debugStyle($range, $param, $value, $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'font-face':
                     $object->getFont()->setName($value);
-                    $this->debugStyle($range, $param, $value, $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'font-size':
                     $object->getFont()->setSize($value);
-                    $this->debugStyle($range, $param, $value, $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'font-weight':
                     $value = $value=='bold';
                     $object->getFont()->setBold($value);
-                    $this->debugStyle($range, $param, "setBold(".var_export($value, true).")", $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'font-style':
                     $value = $value=='italic';
-                    $object->getFont()->setItalic($value=='italic');
-                    $this->debugStyle($range, $param, "setItalic(".var_export($value, true).")", $type_cell);
+                    $object->getFont()->setItalic($value);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'line-height':
-                    $value = intval($value);
-                    if ($target == 'default') {
-                        $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($value);
-                    }
-                    elseif ($col = 1) {
-                        // Para aplicar apenas uma vez por linha
-                        $this->getActiveSheet()->getRowDimension($row)->setRowHeight($value);
-                    }
-                    $this->debugStyle($row, $param, $value, $type_row);
+                    $this->setLineHeight($value, $target, $row, $col);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
-                // case 'border-style':
-                //     $object->getBorders()->getLeft($value=='italic');
-                //     break;
-
                 case 'vertical-align':
-                    switch($value) {
-                        case 'top':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP;
-                            break;
-                        case 'middle':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
-                            break;
-                        case 'bottom':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_BOTTOM;
-                            break;
-                        default:
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
-                    }
+                    $align = $this->getMappedVerticalAlign($value);
                     $object->getAlignment()->setVertical($align);
-                    $this->debugStyle($range, $param, $align, $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
                     break;
 
                 case 'text-align':
-                    switch($value) {
-                        case 'left':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
-                            break;
-                        case 'right':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT;
-                            break;
-                        case 'center':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER;
-                            break;
-                        case 'justify':
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_JUSTIFY;
-                            break;
-                        default:
-                            $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
-                    }
+                    $align = $this->getMappedHorizontalAlign($value);                    
                     $object->getAlignment()->setHorizontal($align);
-                    $this->debugStyle($range, $param, $align, $type_cell);
+                    $this->debugStyle($target, $row, $col, $param, $value);
+                    break;
+
+                case 'background-color-odd':
+                // case 'background-color-even': <- even não é necessário pois o parametro é dinamico
+                    $this->setBackgroundStyle($styles, $target, $row, $col);
+                    break;
+
+                case 'border-color-inside':
+                // case 'border-color-outside': não são necessários pois o parametro é dinamico
+                // case 'border-style-inside':
+                // case 'border-style-outside':
+                    $this->setBorderStyle($styles, $target, $row, $col);
                     break;
             }
         }
     }
+
+    private function setBackgroundStyle(array $styles, $target, $row, $col)
+    {
+        // Para controlar odd e even
+        $row_control = $row-1;
+
+        $param = ($row_control%2 == 0)
+            ? 'background-color-odd' 
+            : 'background-color-even';
+
+        if (!isset($styles[$param])) {
+            throw new OutOfBoundsException("The '{$param}' parameter is not present in the style list");
+        }
+
+        // Se valor for 'none', não aplica
+        $value = $styles[$param];
+        if ($value == 'none') {
+            return false;
+        }
+
+        // Se não for aplicado no documento todo
+        // a a coluna extrapolar a última, não aplica
+        if ($target !== 'default' && $col > $this->getLastColumn()) {
+            return false;
+        }
+
+        $color = $this->createColor($value);
+        $this->getTargetObject($target, $row, $col)
+             ->getFill()
+             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+             ->setStartColor($color);
+
+        if ($target == 'default') {
+            $this->debugStyle($target, $row, $col, 'background', $styles['background-color-odd']);
+        } else {
+            $this->debugStyle($target, $row, $col, 'background', $value);
+        }
+    }
+
+    private function setBorderStyle(array $styles, $target, $row, $col)
+    {
+        $requireds = [
+            'border-color-inside',
+            'border-color-outside',
+            'border-style-inside',
+            'border-style-outside'
+        ];
+        foreach ($requireds as $param) {
+            if (!isset($styles[$param])) {
+                throw new OutOfBoundsException("The '{$param}' parameter is not present in the style list");
+            }
+        }
+
+        // Bordas não são setadas no documento todo
+        if ($target == 'default') {
+            return false;
+        }
+
+        if ($row == null) {
+            throw new InvalidArgumentException("The \$row argument can not be null for the target other than 'default'");
+        }
+        if ($col == null) {
+            throw new InvalidArgumentException("The \$col argument can not be null for the target other than 'default'");
+        }        
+
+        // Bordas internas
+        // --------------------------------------------------
+        
+        if ($styles['border-style-inside'] != 'none') {
+
+            $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
+            $inside_color = $this->createColor($styles['border-color-inside']);
+
+            if ($row != 1) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getTop()
+                     ->setBorderStyle($inside_style)
+                     ->setColor($inside_color);
+            }
+
+            if ($col != 1) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getLeft()
+                     ->setBorderStyle($inside_style)
+                     ->setColor($inside_color);
+            }
+
+        }
+
+        if ($styles['border-style-outside'] != 'none') {
+
+            $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
+            $outside_color = $this->createColor($styles['border-color-outside']);
+
+            if ($row == 1) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getTop()
+                     ->setBorderStyle($outside_style)
+                     ->setColor($outside_color);
+            }
+
+            if ($row == $this->getLastRow()) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getBottom()
+                     ->setBorderStyle($outside_style)
+                     ->setColor($outside_color);
+            }
+
+            if ($col == 1) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getLeft()
+                     ->setBorderStyle($outside_style)
+                     ->setColor($outside_color);
+            }
+
+            if ($col == $this->getLastColumn()) {
+                $this->getTargetObject($target, $row, $col)
+                     ->getBorders()->getRight()
+                     ->setBorderStyle($outside_style)
+                     ->setColor($outside_color);
+            }
+
+        }
+    }
+
+    private function setLineHeight($height_value, $target, $row = null, $col = null)
+    {
+        $height_value = intval($height_value);
+
+        if ($target != 'default') {
+
+            if ($row == null) {
+                throw new InvalidArgumentException("The \$row argument can not be null for the target other than 'default'");
+            }
+            if ($col == null) {
+                throw new InvalidArgumentException("The \$col argument can not be null for the target other than 'default'");
+            }
+
+            // Aplica a altura na linha especificada
+            // Passando pela primeira coluna, aplica na linha toda
+            if ($col == 1) {
+                $this->getActiveSheet()->getRowDimension($row)->setRowHeight($height_value);    
+            }
+
+        } else {
+
+            // Aplica a altura no documento todo
+            $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($height_value);
+        }
+    }
+
+    // private function applyStylesBackgrounds($target, $row = null, $col = null, array $styles = null)
+    // {
+    //     $styles = $styles==null
+    //         ? $this->getStyles($target)
+    //         : $styles;
+
+    //     if ($target == 'default') {
+    //         $range     = null;
+    //         $type_cell = 'default';
+    //         $type_row  = 'default';
+    //         $object    = $this->getSpreadsheetObject()->getDefaultStyle();
+    //     }
+    //     else {
+
+    //         if($row == null || $col == null) {
+    //             throw new InvalidArgumentException("Arguments row and col can not be null");
+    //         }
+
+    //         $range     = $this->getColumnVowel($col).$row;
+    //         $type_cell = 'cell';
+    //         $type_row  = 'row';
+    //         $object    = $this->getActiveSheet()->getStyle($range);
+    //     }
+
+    //     // Bordas
+    //     $inside_color_value = 'FF' . trim(strtoupper($styles['border-color-inside']), '#');
+    //     $inside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($inside_color_value);
+    //     $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
+
+    //     $outside_color_value = 'FF' . trim(strtoupper($styles['border-color-outside']), '#');
+    //     $outside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($outside_color_value);
+    //     $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
+
+    //     if ($target == 'body') {
+    //         $start_row = 1;
+    //         $ended_row = $this->getLastRow();
+    //         $ended_col = $this->getLastColumn();
+    //     }
+    //     elseif($target == 'header') {
+    //         $start_row = 1;
+    //         $ended_row = $this->getHeaderNumRows();
+    //         $ended_col = $this->getColumnVowel(1);
+    //     }
+
+    //     foreach ($styles as $param => $value) {
+
+    //         $background_param = ($this->row_control%2 == 0)
+    //             ? 'background-color-odd' : 'background-color-even';
+
+    //         if ($value == 'none') {
+    //             continue;
+    //         }
+
+    //         switch($param) {
+
+    //             case 'border-style-inside':
+
+    //                 if ($target !== 'default') {
+
+    //                     if ($row > $start_row && $col <= $this->getColumnNumber($ended_col)) {
+    //                         $object->getBorders()->getTop()
+    //                             ->setBorderStyle($inside_style)
+    //                             ->setColor($inside_color);
+    //                     }
+
+    //                     if ($col > 1 && $col <= $this->getColumnNumber($ended_col)) {
+    //                         $object->getBorders()->getLeft()
+    //                             ->setBorderStyle($inside_style)
+    //                             ->setColor($inside_color);
+    //                     }
+    //                 }
+    //                 break;
+
+    //             case 'border-style-outside':
+
+    //                 if ($target !== 'default') {
+
+    //                     if ($row == $start_row && $col <= $this->getColumnNumber($ended_col)) {
+    //                         $object->getBorders()->getTop()
+    //                             ->setBorderStyle($outside_style)
+    //                             ->setColor($outside_color);
+    //                     }
+
+    //                     if ($row == $ended_row && $col <= $this->getColumnNumber($ended_col)) {
+    //                         $object->getBorders()->getBottom()
+    //                             ->setBorderStyle($outside_style)
+    //                             ->setColor($outside_color); 
+    //                     }
+
+    //                     if ($col == 1) {
+    //                         $object->getBorders()->getLeft()
+    //                             ->setBorderStyle($outside_style)
+    //                             ->setColor($outside_color);
+    //                     }
+
+    //                     if ($col == $this->getColumnNumber($ended_col)) {
+    //                         $object->getBorders()->getRight()
+    //                             ->setBorderStyle($outside_style)
+    //                             ->setColor($outside_color);
+    //                     }
+    //                 }
+    //                 break;
+
+    //             case 'background-color-odd':
+    //             // case 'background-color-even': <- even não é necessário pois o parametro é dinamico
+
+    //                 if ($styles[$background_param] == 'none') {
+    //                     continue;
+    //                 }
+
+    //                 if ($target !== 'default' && $col > $this->getColumnNumber($ended_col)) {
+    //                     continue;
+    //                 }
+                    
+    //                 $value = 'FF' . trim(strtoupper($styles[$background_param]), '#');
+    //                 $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+    //                 $object->getFill()
+    //                      ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+    //                      ->setStartColor($color);
+    //                 $this->debugStyle($range, 'background', str_replace('background-color-', '', $background_param).":".$value, $type_cell);
+    //                 break;
+
+    //             case 'color':
+    //                 $value = 'FF' . trim(strtoupper($value), '#');
+    //                 $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+    //                 $object->getFont()->setColor($color);
+    //                 $this->debugStyle($range, $param, $value, $type_cell);
+    //                 break;
+
+    //             case 'font-face':
+    //                 $object->getFont()->setName($value);
+    //                 $this->debugStyle($range, $param, $value, $type_cell);
+    //                 break;
+
+    //             case 'font-size':
+    //                 $object->getFont()->setSize($value);
+    //                 $this->debugStyle($range, $param, $value, $type_cell);
+    //                 break;
+
+    //             case 'font-weight':
+    //                 $value = $value=='bold';
+    //                 $object->getFont()->setBold($value);
+    //                 $this->debugStyle($range, $param, "setBold(".var_export($value, true).")", $type_cell);
+    //                 break;
+
+    //             case 'font-style':
+    //                 $value = $value=='italic';
+    //                 $object->getFont()->setItalic($value=='italic');
+    //                 $this->debugStyle($range, $param, "setItalic(".var_export($value, true).")", $type_cell);
+    //                 break;
+
+    //             case 'line-height':
+    //                 $value = intval($value);
+    //                 if ($target == 'default') {
+    //                     $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($value);
+    //                 }
+    //                 elseif ($col = 1) {
+    //                     // Para aplicar apenas uma vez por linha
+    //                     $this->getActiveSheet()->getRowDimension($row)->setRowHeight($value);
+    //                 }
+    //                 $this->debugStyle($row, $param, $value, $type_row);
+    //                 break;
+
+    //             // case 'border-style':
+    //             //     $object->getBorders()->getLeft($value=='italic');
+    //             //     break;
+
+    //             case 'vertical-align':
+    //                 switch($value) {
+    //                     case 'top':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP;
+    //                         break;
+    //                     case 'middle':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
+    //                         break;
+    //                     case 'bottom':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_BOTTOM;
+    //                         break;
+    //                     default:
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
+    //                 }
+    //                 $object->getAlignment()->setVertical($align);
+    //                 $this->debugStyle($range, $param, $align, $type_cell);
+    //                 break;
+
+    //             case 'text-align':
+    //                 switch($value) {
+    //                     case 'left':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
+    //                         break;
+    //                     case 'right':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT;
+    //                         break;
+    //                     case 'center':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER;
+    //                         break;
+    //                     case 'justify':
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_JUSTIFY;
+    //                         break;
+    //                     default:
+    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
+    //                 }
+    //                 $object->getAlignment()->setHorizontal($align);
+    //                 $this->debugStyle($range, $param, $align, $type_cell);
+    //                 break;
+    //         }
+    //     }
+    // }
 
     /**
      * Interpreta o conteúdo de uma string e aplica os estilos 
@@ -660,8 +898,9 @@ class Collector
      * 
      * @return \PhpOffice\PhpSpreadsheet\RichText\RichText
      */
-    public function parseHtmlText($string, array $styles = [])
+    private function parseHtmlText($string, array $styles = null)
     {
+        $styles = $styles==null ? [] : $styles;
         $styles = $this->normalizeStyles($styles);
 
         $string = "" . $string;
@@ -691,12 +930,13 @@ class Collector
             $strip_styles[] = 't';
         }
 
+        // Armazena os pedaços o texto sem as tags
+        // para o debugger capturar
+        $this->last_text_content = implode('', $strips);
+
         $text = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
 
-        $this->debug['parseHtmlText'] = implode('', $strips);
-
-        $hex = 'FF' . trim(strtoupper($styles['color']), '#');
-        $color = new \PhpOffice\PhpSpreadsheet\Style\Color($hex);
+        $color = $this->createColor($styles['color']);
 
         foreach ($strips as $k => $value) {
 
@@ -900,47 +1140,95 @@ class Collector
     // Helpers
     //
 
+    public function getDebugInfo()
+    {
+        return self::$debug;
+    }
+
     /**
      * Armazena informações de debug
      */
-    private function debugStyle($range, $param, $value, $type = 'cell')
+
+    protected function debug($param, $value)
+    {
+        self::$debug[$param] = $value;
+    }
+
+    protected function debugStyle($target, $row, $col, $param, $value)
     {
         // Armazena as informações para os testes de unidade
-        if (!isset($this->debug['applyStyles'])) {
-            $this->debug['applyStyles'] = [];
-            $this->debug['applyStyles']['default'] = [];
-            $this->debug['applyStyles']['cells'] = [];
-            $this->debug['applyStyles']['rows'] = [];
+        if (!isset(self::$debug['styles'])) {
+            self::$debug['styles'] = [];
         }
 
-        if (!isset($this->debug['applyStyles']['cells'][$range])) {
-            $this->debug['applyStyles']['cells'][$range] = [];
+        if (!isset(self::$debug['styles'][$target])) {
+            self::$debug['styles'][$target] = [];
         }
 
-        if ($type == 'default') {
-            $this->debug['applyStyles']['default'][$param] = $value;
-        }
-        elseif ($type == 'cell') {
-            $this->debug['applyStyles']['cells'][$range][$param] = $value;
+        if ($target != 'default') {
+            $range = $this->getColumnVowel($col).$row;
+            if (!isset(self::$debug['styles'][$target][$range])) {
+                self::$debug['styles'][$target][$range] = [];
+            }
+
+            self::$debug['styles'][$target][$range][$param] = $value;
         }
         else {
-            $this->debug['applyStyles']['rows'][$range][$param] = $value;
+            self::$debug['styles'][$target][$param] = $value;
         }
     }
 
     /**
-     * Seta os estilos para o cabeçalho ou para o corpo da planilha.
+     * Devolve o parâmetro correto de alinhamento vertical, com base 
+     * nas constantes da biblioteca PHPSpreadsheet
      * 
-     * @param string $target header|body
-     * @param array $styles
+     * @return string
      */
-    protected function setStyles($target, array $styles)
+    private function getMappedVerticalAlign($param)
     {
-        if ($target == 'body') {
-            $this->body_styles = $this->normalizeStyles($styles, 'body');
-        } else {
-            $this->header_styles = $this->normalizeStyles($styles, 'header');
+        switch($param) {
+            case 'top':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP;
+                break;
+            case 'middle':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
+                break;
+            case 'bottom':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_BOTTOM;
+                break;
+            default:
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
         }
+
+        return $align;
+    }
+
+    /**
+     * Devolve o parâmetro correto de alinhamento vertical, com base 
+     * nas constantes da biblioteca PHPSpreadsheet
+     * 
+     * @return string
+     */
+    private function getMappedHorizontalAlign($param)
+    {
+        switch($param) {
+            case 'left':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
+                break;
+            case 'right':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT;
+                break;
+            case 'center':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER;
+                break;
+            case 'justify':
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_JUSTIFY;
+                break;
+            default:
+                $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
+        }
+
+        return $align;
     }
 
     /**
@@ -973,13 +1261,39 @@ class Collector
             : Style\Border::BORDER_NONE;
     }
 
+    protected function createColor($hex)
+    {
+        $value = $this->parseHex($hex);
+        return new \PhpOffice\PhpSpreadsheet\Style\Color($value);
+    }
+
+    protected function parseHex($hex)
+    {
+        $hex = trim(strtoupper($hex), '#');
+        if (strlen($hex) == 8) {
+
+            $fixed = $hex;
+
+        } elseif (strlen($hex) == 6) {
+
+            $fixed = 'FF' . $hex;
+
+        } elseif(strlen($hex) >= 3) {
+
+            $fixed = 'FF' . $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        return $fixed;
+    }
+
+
     /**
      * Converte uma coluna numérica para as vogais correspondentes.
      * 
      * @param int $number
      * @return string
      */
-    public function getColumnVowel($number)
+    protected function getColumnVowel($number)
     {
         if (!is_int($number) && !is_numeric($number)) {
             return $number;
@@ -1010,7 +1324,7 @@ class Collector
      * @param string $vowel
      * @return int
      */
-    public function getColumnNumber($vowel)
+    protected function getColumnNumber($vowel)
     {
         if (is_numeric($vowel)) {
             return (int) $vowel;
@@ -1062,6 +1376,12 @@ class Collector
             $clean_styles[$attr] = isset($styles[$attr])
                 ? $styles[$attr] 
                 : $value;
+        }
+
+        // Sobrescreve os backgrounds
+        if (isset($styles['background-color'])) {
+            $clean_styles['background-color-odd']  = $styles['background-color'];
+            $clean_styles['background-color-even'] = $styles['background-color'];
         }
 
         return $clean_styles;
