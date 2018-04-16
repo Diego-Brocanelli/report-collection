@@ -55,8 +55,8 @@ class Collector
         'background-color-odd'  => '#ffffff', // ímpar
         'background-color-even' => '#f5f5f5', // par
 
-        'border-color-inside'   => '#ff0000',
-        'border-color-outside'  => '#0000ff',
+        'border-color-inside'   => '#eeeeee',
+        'border-color-outside'  => '#555555',
 
         // none, 
         // dash-dot, dash-dot-dot, dashed, dotted, double, hair, medium, 
@@ -76,7 +76,13 @@ class Collector
     ];
 
     /** @var array */
-    private $header_styles = [];
+    private $header_styles = [
+        'background-color-odd'  => '#555555',
+        'background-color-even' => '#555555',
+        'border-color-inside'   => '#444444',
+        'border-color-outside'  => '#555555',
+        'color'                 => '#ffffff',
+    ];
 
     /** @var array */
     private $body_styles = [];
@@ -97,6 +103,13 @@ class Collector
     // Métodos Construtores
     //
 
+    protected function __construct()
+    {
+        // Prepara os estilos padrões
+        $this->header_styles = $this->normalizeStyles($this->header_styles);
+        $this->body_styles   = $this->normalizeStyles($this->body_styles);
+    }
+
     /**
      * Cria uma planilha a partir de um arquivo.
      * As extensões suportadas são:
@@ -107,9 +120,7 @@ class Collector
      */
     public static function createFromFile($filename, $force_extension = null)
     {
-        if (self::$instance == null) {
-            self::$instance = new self;
-        }
+        self::$instance = new self;
 
         $extension = ($force_extension!=null)
             ? $force_extension
@@ -308,21 +319,10 @@ class Collector
     /**
      * @return array
      */
-    public function getStyles($target = null)
+    public function getStyles($target = 'default')
     {
-        switch($target) {
-
-            case 'header':
-                return $this->normalizeStyles($this->header_styles);
-                break;
-
-            case 'body':
-                return $this->normalizeStyles($this->body_styles);
-                break;
-
-            default:
-                return $this->default_styles;
-        }
+        $target = $target . "_styles";
+        return $this->{$target};
     }
 
     //
@@ -937,9 +937,9 @@ class Collector
     protected function setStyles($target, array $styles)
     {
         if ($target == 'body') {
-            $this->body_styles = $styles;
+            $this->body_styles = $this->normalizeStyles($styles, 'body');
         } else {
-            $this->header_styles = $styles;
+            $this->header_styles = $this->normalizeStyles($styles, 'header');
         }
     }
 
@@ -1037,13 +1037,27 @@ class Collector
      * Normaliza os estilos especificados, adicionando os 
      * estilos padrões quando estes não estiverem presentes.
      * 
+     * @param array $styles
+     * @param string $based_on header|body|default
      * @return array
      */
-    public function normalizeStyles(array $styles)
+    public function normalizeStyles(array $styles, $based_on = 'default')
     {
         $clean_styles = [];
 
-        foreach($this->default_styles as $attr => $value) {
+        switch($based_on) {
+            case 'header':
+                $base_styles = $this->header_styles;
+                break;
+            case 'body':
+                $base_styles = $this->body_styles;
+                break;
+            case 'default':
+                $base_styles = $this->default_styles;
+                break;
+        }
+        
+        foreach($base_styles as $attr => $value) {
 
             $clean_styles[$attr] = isset($styles[$attr])
                 ? $styles[$attr] 
