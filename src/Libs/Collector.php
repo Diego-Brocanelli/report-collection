@@ -87,17 +87,21 @@ class Collector
     /** @var array */
     private $body_styles = [];
 
-    /** @var array */
-    private static $debug = [];
-
     /** @var int Para acessar o texto sem formatação */
     private $last_text_content = null;
 
     /** @var int Lazy Load */
     private $last_col = null;
 
-    /** @var int Lazy Load*/
+    /** @var int Lazy Load */
     private $last_row = null;
+
+    /** @var bool Chave para setar o modo de debug */
+    public $debug_mode = false;
+    
+    /** @var array */
+    public $debug_info = [];
+
 
     //
     // Métodos Construtores
@@ -122,11 +126,11 @@ class Collector
     {
         self::$instance = new Collector;
 
+        self::$instance->buffer = null;
+
         $extension = ($force_extension!=null)
             ? $force_extension
             : pathinfo($filename, PATHINFO_EXTENSION);
-
-        self::$instance->buffer = null;
 
         foreach(self::$instance->readers as $slug => $base) {
 
@@ -144,7 +148,7 @@ class Collector
                 "Unsupported file type for reading. Use " . implode(',', self::$instance->readers));
         }
 
-        self::$debug = ['created_with' => __METHOD__];
+        self::$instance->debug_info = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -166,7 +170,7 @@ class Collector
         self::$instance->createFromFile($temp_file, 'html');
         unlink($temp_file);
 
-        self::$debug = ['created_with' => __METHOD__];
+        self::$instance->debug_info = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -191,7 +195,7 @@ class Collector
 
         self::$instance->buffer = $spreadsheet;
 
-        self::$debug = ['created_with' => __METHOD__];
+        self::$instance->debug_info = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -244,7 +248,7 @@ class Collector
 
         self::$instance->buffer = $spreadsheet;
 
-        self::$debug = ['created_with' => __METHOD__];
+        self::$instance->debug_info = ['created_with' => __METHOD__];
 
         return self::$instance;
     }
@@ -466,6 +470,19 @@ class Collector
 
         foreach ($styles as $param => $value) {
 
+            if ($this->debug_mode == true 
+            && !in_array($param, [
+                    'background-color-odd', 
+                    'background-color-even',
+                    'border-color-inside', 
+                    'border-color-outside',
+                    'border-style-inside', 
+                    'border-style-outside',
+                ])
+            ) {
+                $this->debugCell($row, $col, $param, $value);
+            }
+
             // Não será aplicado
             if ($value == 'none') {
                 continue;
@@ -553,7 +570,7 @@ class Collector
         }
 
         // Se não for aplicado no documento todo
-        // a a coluna extrapolar a última, não aplica
+        // e a coluna extrapolar a última, não aplica
         if ($target !== 'default' && $col > $this->getLastColumn()) {
             return false;
         }
@@ -569,6 +586,8 @@ class Collector
         } else {
             $this->debugStyle($target, $row, $col, 'background', $value);
         }
+
+        $this->debugCell($row, $col, $param, $value);
     }
 
     private function setBorderStyle(array $styles, $target, $row, $col)
@@ -610,6 +629,9 @@ class Collector
                      ->getBorders()->getTop()
                      ->setBorderStyle($inside_style)
                      ->setColor($inside_color);
+
+                $this->debugCell($row, $col, 'border-style-top', $styles['border-style-inside']);
+                $this->debugCell($row, $col, 'border-color-top', $styles['border-color-inside']);
             }
 
             if ($col != 1) {
@@ -617,6 +639,9 @@ class Collector
                      ->getBorders()->getLeft()
                      ->setBorderStyle($inside_style)
                      ->setColor($inside_color);
+
+                $this->debugCell($row, $col, 'border-style-left', $styles['border-style-inside']);
+                $this->debugCell($row, $col, 'border-color-left', $styles['border-color-inside']);
             }
 
         }
@@ -631,6 +656,9 @@ class Collector
                      ->getBorders()->getTop()
                      ->setBorderStyle($outside_style)
                      ->setColor($outside_color);
+
+                $this->debugCell($row, $col, 'border-style-top', $styles['border-style-outside']);
+                $this->debugCell($row, $col, 'border-color-top', $styles['border-color-outside']);
             }
 
             if ($row == $this->getLastRow()) {
@@ -638,6 +666,9 @@ class Collector
                      ->getBorders()->getBottom()
                      ->setBorderStyle($outside_style)
                      ->setColor($outside_color);
+
+                $this->debugCell($row, $col, 'border-style-bottom', $styles['border-style-outside']);
+                $this->debugCell($row, $col, 'border-color-bottom', $styles['border-color-outside']);
             }
 
             if ($col == 1) {
@@ -645,6 +676,9 @@ class Collector
                      ->getBorders()->getLeft()
                      ->setBorderStyle($outside_style)
                      ->setColor($outside_color);
+
+                $this->debugCell($row, $col, 'border-style-left', $styles['border-style-outside']);
+                $this->debugCell($row, $col, 'border-color-left', $styles['border-color-outside']);
             }
 
             if ($col == $this->getLastColumn()) {
@@ -652,6 +686,9 @@ class Collector
                      ->getBorders()->getRight()
                      ->setBorderStyle($outside_style)
                      ->setColor($outside_color);
+
+                $this->debugCell($row, $col, 'border-style-right', $styles['border-style-outside']);
+                $this->debugCell($row, $col, 'border-color-right', $styles['border-color-outside']);
             }
 
         }
@@ -682,215 +719,6 @@ class Collector
             $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($height_value);
         }
     }
-
-    // private function applyStylesBackgrounds($target, $row = null, $col = null, array $styles = null)
-    // {
-    //     $styles = $styles==null
-    //         ? $this->getStyles($target)
-    //         : $styles;
-
-    //     if ($target == 'default') {
-    //         $range     = null;
-    //         $type_cell = 'default';
-    //         $type_row  = 'default';
-    //         $object    = $this->getSpreadsheetObject()->getDefaultStyle();
-    //     }
-    //     else {
-
-    //         if($row == null || $col == null) {
-    //             throw new InvalidArgumentException("Arguments row and col can not be null");
-    //         }
-
-    //         $range     = $this->getColumnVowel($col).$row;
-    //         $type_cell = 'cell';
-    //         $type_row  = 'row';
-    //         $object    = $this->getActiveSheet()->getStyle($range);
-    //     }
-
-    //     // Bordas
-    //     $inside_color_value = 'FF' . trim(strtoupper($styles['border-color-inside']), '#');
-    //     $inside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($inside_color_value);
-    //     $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
-
-    //     $outside_color_value = 'FF' . trim(strtoupper($styles['border-color-outside']), '#');
-    //     $outside_color = new \PhpOffice\PhpSpreadsheet\Style\Color($outside_color_value);
-    //     $outside_style = $this->getMappedBorderStyle($styles['border-style-outside']);
-
-    //     if ($target == 'body') {
-    //         $start_row = 1;
-    //         $ended_row = $this->getLastRow();
-    //         $ended_col = $this->getLastColumn();
-    //     }
-    //     elseif($target == 'header') {
-    //         $start_row = 1;
-    //         $ended_row = $this->getHeaderNumRows();
-    //         $ended_col = $this->getColumnVowel(1);
-    //     }
-
-    //     foreach ($styles as $param => $value) {
-
-    //         $background_param = ($this->row_control%2 == 0)
-    //             ? 'background-color-odd' : 'background-color-even';
-
-    //         if ($value == 'none') {
-    //             continue;
-    //         }
-
-    //         switch($param) {
-
-    //             case 'border-style-inside':
-
-    //                 if ($target !== 'default') {
-
-    //                     if ($row > $start_row && $col <= $this->getColumnNumber($ended_col)) {
-    //                         $object->getBorders()->getTop()
-    //                             ->setBorderStyle($inside_style)
-    //                             ->setColor($inside_color);
-    //                     }
-
-    //                     if ($col > 1 && $col <= $this->getColumnNumber($ended_col)) {
-    //                         $object->getBorders()->getLeft()
-    //                             ->setBorderStyle($inside_style)
-    //                             ->setColor($inside_color);
-    //                     }
-    //                 }
-    //                 break;
-
-    //             case 'border-style-outside':
-
-    //                 if ($target !== 'default') {
-
-    //                     if ($row == $start_row && $col <= $this->getColumnNumber($ended_col)) {
-    //                         $object->getBorders()->getTop()
-    //                             ->setBorderStyle($outside_style)
-    //                             ->setColor($outside_color);
-    //                     }
-
-    //                     if ($row == $ended_row && $col <= $this->getColumnNumber($ended_col)) {
-    //                         $object->getBorders()->getBottom()
-    //                             ->setBorderStyle($outside_style)
-    //                             ->setColor($outside_color); 
-    //                     }
-
-    //                     if ($col == 1) {
-    //                         $object->getBorders()->getLeft()
-    //                             ->setBorderStyle($outside_style)
-    //                             ->setColor($outside_color);
-    //                     }
-
-    //                     if ($col == $this->getColumnNumber($ended_col)) {
-    //                         $object->getBorders()->getRight()
-    //                             ->setBorderStyle($outside_style)
-    //                             ->setColor($outside_color);
-    //                     }
-    //                 }
-    //                 break;
-
-    //             case 'background-color-odd':
-    //             // case 'background-color-even': <- even não é necessário pois o parametro é dinamico
-
-    //                 if ($styles[$background_param] == 'none') {
-    //                     continue;
-    //                 }
-
-    //                 if ($target !== 'default' && $col > $this->getColumnNumber($ended_col)) {
-    //                     continue;
-    //                 }
-                    
-    //                 $value = 'FF' . trim(strtoupper($styles[$background_param]), '#');
-    //                 $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-    //                 $object->getFill()
-    //                      ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-    //                      ->setStartColor($color);
-    //                 $this->debugStyle($range, 'background', str_replace('background-color-', '', $background_param).":".$value, $type_cell);
-    //                 break;
-
-    //             case 'color':
-    //                 $value = 'FF' . trim(strtoupper($value), '#');
-    //                 $color = new \PhpOffice\PhpSpreadsheet\Style\Color($value);
-    //                 $object->getFont()->setColor($color);
-    //                 $this->debugStyle($range, $param, $value, $type_cell);
-    //                 break;
-
-    //             case 'font-face':
-    //                 $object->getFont()->setName($value);
-    //                 $this->debugStyle($range, $param, $value, $type_cell);
-    //                 break;
-
-    //             case 'font-size':
-    //                 $object->getFont()->setSize($value);
-    //                 $this->debugStyle($range, $param, $value, $type_cell);
-    //                 break;
-
-    //             case 'font-weight':
-    //                 $value = $value=='bold';
-    //                 $object->getFont()->setBold($value);
-    //                 $this->debugStyle($range, $param, "setBold(".var_export($value, true).")", $type_cell);
-    //                 break;
-
-    //             case 'font-style':
-    //                 $value = $value=='italic';
-    //                 $object->getFont()->setItalic($value=='italic');
-    //                 $this->debugStyle($range, $param, "setItalic(".var_export($value, true).")", $type_cell);
-    //                 break;
-
-    //             case 'line-height':
-    //                 $value = intval($value);
-    //                 if ($target == 'default') {
-    //                     $this->getActiveSheet()->getDefaultRowDimension()->setRowHeight($value);
-    //                 }
-    //                 elseif ($col = 1) {
-    //                     // Para aplicar apenas uma vez por linha
-    //                     $this->getActiveSheet()->getRowDimension($row)->setRowHeight($value);
-    //                 }
-    //                 $this->debugStyle($row, $param, $value, $type_row);
-    //                 break;
-
-    //             // case 'border-style':
-    //             //     $object->getBorders()->getLeft($value=='italic');
-    //             //     break;
-
-    //             case 'vertical-align':
-    //                 switch($value) {
-    //                     case 'top':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP;
-    //                         break;
-    //                     case 'middle':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
-    //                         break;
-    //                     case 'bottom':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_BOTTOM;
-    //                         break;
-    //                     default:
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER;
-    //                 }
-    //                 $object->getAlignment()->setVertical($align);
-    //                 $this->debugStyle($range, $param, $align, $type_cell);
-    //                 break;
-
-    //             case 'text-align':
-    //                 switch($value) {
-    //                     case 'left':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
-    //                         break;
-    //                     case 'right':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT;
-    //                         break;
-    //                     case 'center':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER;
-    //                         break;
-    //                     case 'justify':
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_JUSTIFY;
-    //                         break;
-    //                     default:
-    //                         $align = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT;
-    //                 }
-    //                 $object->getAlignment()->setHorizontal($align);
-    //                 $this->debugStyle($range, $param, $align, $type_cell);
-    //                 break;
-    //         }
-    //     }
-    // }
 
     /**
      * Interpreta o conteúdo de uma string e aplica os estilos 
@@ -1051,9 +879,10 @@ class Collector
     {
         $this->setupSpreadsheet();
 
-        $this->setupBody();
-
         $this->setupHeader();
+
+        $this->setupBody();
+        
 
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
@@ -1142,7 +971,7 @@ class Collector
 
     public function getDebugInfo()
     {
-        return self::$debug;
+        return $this->debug_info;
     }
 
     /**
@@ -1151,30 +980,47 @@ class Collector
 
     protected function debug($param, $value)
     {
-        self::$debug[$param] = $value;
+        $this->debug_info[$param] = $value;
+    }
+
+    protected function debugCell($row, $col, $attr, $value)
+    {
+        if (!isset($this->debug_info['cells'])) {
+            $this->debug_info['cells'] = [];
+        }
+
+        if (!isset($this->debug_info['cells'][$row])) {
+            $this->debug_info['cells'][$row] = [];
+        }
+
+        if (!isset($this->debug_info['cells'][$row][$col])) {
+            $this->debug_info['cells'][$col] = [];
+        }
+
+        $this->debug_info['cells'][$row][$col][] = "$attr:$value";
     }
 
     protected function debugStyle($target, $row, $col, $param, $value)
     {
         // Armazena as informações para os testes de unidade
-        if (!isset(self::$debug['styles'])) {
-            self::$debug['styles'] = [];
+        if (!isset($this->debug_info['styles'])) {
+            $this->debug_info['styles'] = [];
         }
 
-        if (!isset(self::$debug['styles'][$target])) {
-            self::$debug['styles'][$target] = [];
+        if (!isset($this->debug_info['styles'][$target])) {
+            $this->debug_info['styles'][$target] = [];
         }
 
         if ($target != 'default') {
             $range = $this->getColumnVowel($col).$row;
-            if (!isset(self::$debug['styles'][$target][$range])) {
-                self::$debug['styles'][$target][$range] = [];
+            if (!isset($this->debug_info['styles'][$target][$range])) {
+                $this->debug_info['styles'][$target][$range] = [];
             }
 
-            self::$debug['styles'][$target][$range][$param] = $value;
+            $this->debug_info['styles'][$target][$range][$param] = $value;
         }
         else {
-            self::$debug['styles'][$target][$param] = $value;
+            $this->debug_info['styles'][$target][$param] = $value;
         }
     }
 
