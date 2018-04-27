@@ -4,9 +4,10 @@ namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReportCollection\Libs\Reader;
 use ReportCollection\Tests\Libs;
 
-class FromObjectTest extends TestCase
+class CreateFromObjectTest extends TestCase
 {
     public function testImportSimpleObject()
     {
@@ -20,15 +21,22 @@ class FromObjectTest extends TestCase
             (object) ["Magazzini Alimentari Riuniti", "Giovanni Rovelli", "Italy"]
         );
 
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
 
         $array = $handle->toArray();
 
         $this->assertTrue(is_array($array));
         $this->assertCount(7, $array);
+        $this->assertArrayHasKey(0, $array);
+        $this->assertArrayHasKey(6, $array);
+        $this->assertFalse(isset($array[7]));
+
 
         for($x=0; $x<7; $x++) {
             $this->assertCount(3, $array[$x]);
+            $this->assertArrayHasKey(0, $array[$x]);
+            $this->assertArrayHasKey(1, $array[$x]);
+            $this->assertArrayHasKey(2, $array[$x]);
         }
     }
 
@@ -36,15 +44,21 @@ class FromObjectTest extends TestCase
     {
         $provider = new Libs\ValidObject;
 
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
 
         $array = $handle->toArray();
 
         $this->assertTrue(is_array($array));
         $this->assertCount(7, $array);
+        $this->assertArrayHasKey(0, $array);
+        $this->assertArrayHasKey(6, $array);
+        $this->assertFalse(isset($array[7]));
 
         for($x=0; $x<7; $x++) {
             $this->assertCount(3, $array[$x]);
+            $this->assertArrayHasKey(0, $array[$x]);
+            $this->assertArrayHasKey(1, $array[$x]);
+            $this->assertArrayHasKey(2, $array[$x]);
         }
     }
 
@@ -52,15 +66,21 @@ class FromObjectTest extends TestCase
     {
         $provider = new Libs\ObjectIterator;
 
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
 
         $array = $handle->toArray();
 
         $this->assertTrue(is_array($array));
         $this->assertCount(7, $array);
+        $this->assertArrayHasKey(0, $array);
+        $this->assertArrayHasKey(6, $array);
+        $this->assertFalse(isset($array[7]));
 
         for($x=0; $x<7; $x++) {
             $this->assertCount(3, $array[$x]);
+            $this->assertArrayHasKey(0, $array[$x]);
+            $this->assertArrayHasKey(1, $array[$x]);
+            $this->assertArrayHasKey(2, $array[$x]);
         }
     }
 
@@ -76,15 +96,21 @@ class FromObjectTest extends TestCase
             ["Magazzini Alimentari Riuniti", "Giovanni Rovelli", "Italy"]
         ]);
 
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
 
         $array = $handle->toArray();
 
         $this->assertTrue(is_array($array));
         $this->assertCount(7, $array);
+        $this->assertArrayHasKey(0, $array);
+        $this->assertArrayHasKey(6, $array);
+        $this->assertFalse(isset($array[7]));
 
         for($x=0; $x<7; $x++) {
             $this->assertCount(3, $array[$x]);
+            $this->assertArrayHasKey(0, $array[$x]);
+            $this->assertArrayHasKey(1, $array[$x]);
+            $this->assertArrayHasKey(2, $array[$x]);
         }
     }
 
@@ -102,15 +128,21 @@ class FromObjectTest extends TestCase
             ["Magazzini Alimentari Riuniti", "Giovanni Rovelli", "Italy"]
         ]);
 
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
 
         $array = $handle->toArray();
 
         $this->assertTrue(is_array($array));
         $this->assertCount(7, $array);
+        $this->assertArrayHasKey(0, $array);
+        $this->assertArrayHasKey(6, $array);
+        $this->assertFalse(isset($array[7]));
 
         for($x=0; $x<7; $x++) {
             $this->assertCount(3, $array[$x]);
+            $this->assertArrayHasKey(0, $array[$x]);
+            $this->assertArrayHasKey(1, $array[$x]);
+            $this->assertArrayHasKey(2, $array[$x]);
         }
     }
 
@@ -119,6 +151,6 @@ class FromObjectTest extends TestCase
         $this->expectException(\UnexpectedValueException::class);
 
         $provider = new Libs\InvalidObject;
-        $handle = \ReportCollection::createFromObject($provider);
+        $handle = Reader::createFromObject($provider);
     }
 }

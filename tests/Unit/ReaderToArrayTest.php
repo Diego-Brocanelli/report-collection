@@ -4,10 +4,12 @@ namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReportCollection\Libs\Reader;
+use ReportCollection\Tests\Libs;
 
-class FromArrayTest extends TestCase
+class ReaderToArrayTest extends TestCase
 {
-    public function testImportArray()
+    public function testSave()
     {
         $provider = array(
             ["Company", "Contact", "Country"],
@@ -19,7 +21,7 @@ class FromArrayTest extends TestCase
             ["Magazzini Alimentari Riuniti", "Giovanni Rovelli", "Italy"]
         );
 
-        $handle = \ReportCollection::createFromArray($provider);
+        $handle = Reader::createFromArray($provider);
 
         $array = $handle->toArray();
 

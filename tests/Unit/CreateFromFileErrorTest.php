@@ -4,8 +4,10 @@ namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReportCollection\Libs\Reader;
+use ReportCollection\Tests\Libs;
 
-class ImportErrorTest extends TestCase
+class CreateFromFileErrorTest extends TestCase
 {
     public function testImportError()
     {
@@ -13,6 +15,6 @@ class ImportErrorTest extends TestCase
 
         $file = __DIR__ . '/../Files/table.err';
 
-        \ReportCollection::createFromFile($file);
+        Reader::createFromFile($file);
     }
 }

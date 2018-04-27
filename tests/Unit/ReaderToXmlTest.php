@@ -4,8 +4,10 @@ namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReportCollection\Libs\Reader;
+use ReportCollection\Tests\Libs;
 
-class ToXmlTest extends TestCase
+class ReaderToXmlTest extends TestCase
 {
     public function testSave()
     {
@@ -19,7 +21,7 @@ class ToXmlTest extends TestCase
             ["Magazzini Alimentari Riuniti", "Giovanni Rovelli", "Italy"]
         );
 
-        $handle = \ReportCollection::createFromArray($provider);
+        $handle = Reader::createFromArray($provider);
 
         $this->assertEquals("<"."?xml version=\"1.0\"?".">
 <Table>
