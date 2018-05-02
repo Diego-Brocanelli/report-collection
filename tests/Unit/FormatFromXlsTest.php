@@ -11,10 +11,17 @@ class FormatFromXlsTest extends TestCase
 {
     public function testFormatDots()
     {
-        $file = __DIR__ . '/../Files/format.xls';
+        /*
+        10.01.1980
+        10-01-80
+        10-01-1980
+        10/01/80
+        10/01/1980
+        */
+        $file = __DIR__ . '/../Files/format-date.xls';
         $handle = Reader::createFromXls($file);
 
-        $handle->setDateFormat('d.m.y'); // 10.01.80
+        $handle->setInputDateFormat('d.m.y'); // 10.01.80
         $array = $handle->toArray();
 
         $date_object = $array[0][0];
@@ -25,14 +32,14 @@ class FormatFromXlsTest extends TestCase
 
     public function testFormatBars()
     {
-        $file = __DIR__ . '/../Files/format.xls';
+        $file = __DIR__ . '/../Files/format-date.xls';
         $handle = Reader::createFromXls($file);
 
-        $handle->setDateFormat('d/m/Y'); // 10/01/1980
+        $handle->setInputDateFormat('d/m/Y'); // 10/01/1980
         $array = $handle->toArray();
 
-        $date_object = $array[0][1];
+        $date_object = $array[0][4];
         $this->assertEquals($date_object->format('d-m-Y'), '10-01-1980');
-        
+
     }
 }

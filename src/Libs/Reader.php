@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace ReportCollection\Libs;
 
@@ -11,13 +11,13 @@ class Reader
 {
     /** @var string */
     protected $type      = null;
-    
+
     /** @var string */
     protected $extension = null;
-    
+
     /** @var mixed */
     protected $buffer    = null;
-    
+
     /** @var array */
     protected $data      = null;
 
@@ -38,7 +38,7 @@ class Reader
 
     /**
      * Importa os dados a partir de um array
-     * 
+     *
      * @param array $array
      */
     public static function createFromArray(array $array)
@@ -53,13 +53,13 @@ class Reader
     /**
      * Importa os dados a partir de um objeto.
      * O objeto deve:
-     * 
+     *
      * Implementar o método toArray()
      * ou
      * Ser iterável
      * ou
      * Ser passível de conversão para array (via atributos)
-     * 
+     *
      * @param mixed $object
      */
     public static function createFromObject($object)
@@ -98,7 +98,7 @@ class Reader
 
     /**
      * Importa os dados a partir de um trecho de código html
-     * 
+     *
      * @param string $string
      */
     public static function createFromHtmlString($string)
@@ -116,7 +116,7 @@ class Reader
 
     /**
      * Importa os dados a partir de um arquivo CSV.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromCsv($filename)
@@ -126,7 +126,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo Gnumeric.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromGnumeric($filename)
@@ -136,7 +136,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo HTML.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromHtml($filename)
@@ -146,7 +146,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo ODS.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromOds($filename)
@@ -156,7 +156,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo SLK.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromSlk($filename)
@@ -166,7 +166,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo XLS.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromXls($filename)
@@ -176,7 +176,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo XLSX.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromXlsx($filename)
@@ -186,7 +186,7 @@ class Reader
 
     /**
      * Importa os dados a a partir de um arquivo XML.
-     * 
+     *
      * @param string $filename Caminho completo até o arquivo
      */
     public static function createFromXml($filename)
@@ -198,7 +198,7 @@ class Reader
      * Importa os dados a a partir de um arquivo.
      * As extensões suportadas são:
      * csv, gnumeric, htm, html, ods, slk, xls, xlsx e xml
-     * 
+     *
      * @param string $filename Arquivo e caminho completo
      * @param string force_extension para arquivos sem extensão
      */
@@ -274,7 +274,7 @@ class Reader
 
                 } elseif(is_string($value)) {
 
-                    $parsed = \DateTime::createFromFormat($this->format_date, $value);
+                    $parsed = \DateTime::createFromFormat($this->input_format_date, $value);
                     if ($parsed !== false) {
                         $value = $parsed;
                     }
@@ -290,7 +290,7 @@ class Reader
                     continue;
                 }
 
-                // Apenas as colunas identificadas do cabeçalho 
+                // Apenas as colunas identificadas do cabeçalho
                 // serão analizadas e tratadas
                 if (!isset($headers[$column])) {
                     continue;
@@ -305,7 +305,7 @@ class Reader
 
             } // Colunas
 
-            // Se a linha inteira for nula, 
+            // Se a linha inteira for nula,
             // termina o loop de verificação
             if (count($nulleds) == count($headers)) {
                 break;
@@ -325,7 +325,7 @@ class Reader
 
     /**
      * Devolve os dados em forma de array.
-     * 
+     *
      * @return array
      */
     public function toArray()
@@ -346,7 +346,7 @@ class Reader
 
     /**
      * Devolve os dados em formato XML.
-     * 
+     *
      * @return string
      */
     public function toXml()
@@ -365,7 +365,7 @@ class Reader
                 $child->addChild('Cell', $item[$k]);
             }
         }
-        
+
         $dom = dom_import_simplexml($writer)->ownerDocument;
         $dom->formatOutput = true;
         // $dom->save($filename);
