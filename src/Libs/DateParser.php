@@ -9,82 +9,83 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class DateParser
 {
-    // Formatos do datetime
-    const DT_ATOM = "Y-m-d\TH:i:sP" ;
-    const DT_COOKIE = "l, d-M-Y H:i:s T" ;
-    const DT_ISO8601 = "Y-m-d\TH:i:sO" ;
-    const DT_RFC822 = "D, d M y H:i:s O" ;
-    const DT_RFC850 = "l, d-M-y H:i:s T" ;
-    const DT_RFC1036 = "D, d M y H:i:s O" ;
-    const DT_RFC1123 = "D, d M Y H:i:s O" ;
-    const DT_RFC2822 = "D, d M Y H:i:s O" ;
-    const DT_RFC3339 = "Y-m-d\TH:i:sP" ;
-    const DT_RSS = "D, d M Y H:i:s O" ;
-    const DT_W3C = "Y-m-d\TH:i:sP" ;
-
-    // Formatos do excel
-    // @see PhpOffice\PhpSpreadsheet\Style\NumberFormat
-    const EX_DASH_YYYY_MM_DD = 'yyyy-mm-dd';
-    const EX_DASH_YY_MM_DD = 'yy-mm-dd';
-    const EX_DASH_D_M_YY = 'd-m-yy';
-    const EX_DASH_D_M = 'd-m';
-    const EX_DASH_M_YY = 'm-yy';
-    const EX_BAR_DD_MM_YY = 'dd/mm/yy';
-    const EX_BAR_D_M_YY = 'd/m/yy';
-    const EX_BAR_YY_MM_DD_AT = 'yy/mm/dd;@';
-    const EX_DATE_XLSX14 = 'mm-dd-yy';
-    const EX_DATE_XLSX15 = 'd-mmm-yy';
-    const EX_DATE_XLSX16 = 'd-mmm';
-    const EX_DATE_XLSX17 = 'mmm-yy';
-    const EX_DATETIME_XLSX22 = 'm/d/yy h:mm';
-    const EX_DATETIME = 'd/m/yy h:mm';
-    const EX_TIME_MED_H_MM = 'h:mm AM/PM';
-    const EX_TIME_MED_H_MM_SS = 'h:mm:ss AM/PM';
-    const EX_TIME_H_MM = 'h:mm';
-    const EX_TIME_H_MM_SS = 'h:mm:ss';
-    const EX_TIME_MM_SS = 'mm:ss';
-    const EX_TIME_I_S_S = 'i:s.S';
-    const EX_TIME_H_MM_SS_AT = 'h:mm:ss;@';
-
+    /** @var ReportCollection\Libs\DateParser */
     private static $instance = null;
 
+    /** @var int */
     private $timestamp = null;
 
-    public $debug = [
-        'type'      => null,
-        'method'    => null,
-        'parser'    => null,
-        'original'  => null,
-        'fixed'     => null,
-        'returned'  => null
-    ];
+    /** @var array */
+    public $debug = null;
 
+    /**
+     * Retorna informações de debug para testes de unidade.
+     * São informadas através das seguintes chaves:
+     * type, method, parser, original, fixed, returned, error
+     * @return array
+     */
     public static function getDebug()
     {
         return self::$instance->debug;
     }
 
     /**
-     * Parseia a data especificada e devolte um timestamp ou false
-     *
-     * @param string $string
+     * Transforma um string válida em timestamp,
+     * ou false em caso de falha.
+     * Funciona como a função strtotime, só que usando timezones.
+     * @see strtotime
+     * @param  string $string
+     * @param  string $timezone
+     * @return int ou false
      */
-    public static function parse($input, $format = null, $timezone = null)
+    public function toTime($input, $timezone = 'UTC')
+    {
+        try {
+            $datetime = new \DateTime($input, new \DateTimeZone($timezone));
+            if ($datetime !== false) {
+                return $datetime->format('U');
+            }
+        } catch (\Exception $e) {
+            $this->debug['error'] = $e->getMessage();
+        }
+
+        return false;
+    }
+
+    /**
+     * Interpreta a data especificada e devolve um objeto DateParse
+     * ou false em caso de falha
+     * @param  mixed $input
+     * @param  string $format
+     * @param  string $timezone
+     * @return ReportCollection\Libs\DateParser ou false
+     */
+    public static function parse($input, $format = null, $timezone = 'UTC')
     {
         if (self::$instance == null) {
             self::$instance = new self;
         }
+
+        // Limpa as informações de debug
+        self::$instance->debug = [
+            'type'      => null,
+            'method'    => null,
+            'parser'    => null,
+            'original'  => null,
+            'fixed'     => null,
+            'returned'  => null,
+            'error'     => null
+        ];
 
         self::$instance->debug['original'] = $input;
 
         // Já é um timestamp!
         if (self::$instance->isUnixTimeStamp($input) == true) {
             self::$instance->timestamp = $input;
-            self::$instance->debug['type'] = 'timestamp';
+            self::$instance->debug['type'] = 'unixtimestamp';
             self::$instance->debug['returned'] = $input;
             $result = true;
         } else {
-            $timezone = $timezone==null ? 'UTC' : $timezone;
             if ($format != null) {
                 $result = self::$instance->parseFormat($input, $format, $timezone);
             } else {
@@ -95,14 +96,15 @@ class DateParser
         return $result == false ? false : self::$instance;
     }
 
-    private function parseFormat($input, $format = null, $timezone = null)
+    private function parseFormat($input, $format = null, $timezone = 'UTC')
     {
         $this->debug['method'] = 'format';
 
         // String não numérica
         if (is_string($input) && is_numeric($input) == false) {
             $this->debug['parser'] = 'php';
-            $value = \DateTime::createFromFormat($input, $format);
+            $this->debug['type'] = 'string';
+            $value = \DateTime::createFromFormat($format, $input, new \DateTimeZone($timezone));
             if ($value !== false) {
                 $this->timestamp = $value->format('U');
                 $this->debug['returned'] = $this->timestamp;
@@ -113,6 +115,7 @@ class DateParser
             $value = ExcelDate::excelToTimestamp($input, $timezone);
             if($value != 0) {
                 $this->timestamp = $value;
+                $this->debug['type'] = 'exceltimestamp';
                 $this->debug['returned'] = $this->timestamp;
                 return true;
             }
@@ -125,14 +128,14 @@ class DateParser
     {
         $this->debug['method'] = 'auto';
 
-        $value = $input;
-
         // String não numérica
         if (is_string($input) && is_numeric($input) == false) {
             $this->debug['parser'] = 'php';
+            $this->debug['type'] = 'string';
             $input = str_replace(['/', '.'], '-', $input);
             $this->debug['fixed'] = $input;
-            $value = strtotime($input);
+
+            $value = $this->toTime($input, $timezone);
             if ($value !== false) {
                 $this->timestamp = $value;
                 $this->debug['returned'] = $this->timestamp;
@@ -146,6 +149,7 @@ class DateParser
             $value = ExcelDate::excelToTimestamp($input, $timezone);
             if($value != 0) {
                 $this->timestamp = $value;
+                $this->debug['type'] = 'exceltimestamp';
                 $this->debug['returned'] = $this->timestamp;
                 return true;
             }
@@ -167,58 +171,28 @@ class DateParser
 
     	return  ($check === $timestamp)
                 // o maior valor inteiro possivel no PHP
-            	AND ( (int) $timestamp <=  PHP_INT_MAX)
-            	AND ( (int) $timestamp >= ~PHP_INT_MAX)
+                && ( (int) $timestamp <=  PHP_INT_MAX)
+                && ( (int) $timestamp >= ~PHP_INT_MAX)
                 // Timestamps unix são contados a partir de 01-01-1970.
-                AND ( (int) (date('Y', $timestamp)) > 1970);
+                && ( (int) (date('Y', $timestamp)) > 1970);
     }
 
+    /**
+     * Devolve o timestamp resultante do processo de interretação da data.
+     * @return int
+     */
     public function getTimestamp()
     {
         return $this->timestamp;
     }
 
+    /**
+     * Devolve o timestamp resultante do processo de interretação da data
+     * em formato de data serial do excel.
+     * @return float
+     */
     public function getExcel()
     {
         return ExcelDate::timestampToExcel($this->timestamp);
-    }
-
-    public function format($format)
-    {
-        $date = new \DateTime;
-        $date->setTimestamp($this->timestamp);
-        return $date->format($format);
-    }
-
-
-
-
-
-    private function isExcelFormat($format)
-    {
-        switch($format) {
-            case EX_DASH_YYYY_MM_DD:
-            case EX_DASH_YY_MM_DD:
-            case EX_DASH_D_M_YY:
-            case EX_DASH_D_M:
-            case EX_DASH_M_YY:
-            case EX_BAR_DD_MM_YY:
-            case EX_BAR_D_M_YY:
-            case EX_BAR_YY_MM_DD_AT:
-            case EX_DATE_XLSX14:
-            case EX_DATE_XLSX15:
-            case EX_DATE_XLSX16:
-            case EX_DATE_XLSX17:
-            case EX_DATETIME_XLSX22:
-            case EX_DATETIME:
-            case EX_TIME_MED_H_MM:
-            case EX_TIME_MED_H_MM_SS:
-            case EX_TIME_H_MM:
-            case EX_TIME_H_MM_SS:
-            case EX_TIME_MM_SS:
-            case EX_TIME_I_S_S:
-            case EX_TIME_H_MM_SS_AT:
-                return true;
-        }
     }
 }
