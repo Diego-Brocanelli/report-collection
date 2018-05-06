@@ -195,4 +195,14 @@ class DateParser
     {
         return ExcelDate::timestampToExcel($this->timestamp);
     }
+
+    /**
+     * Devolve o timestamp resultante do processo de interretação da data
+     * em formato de objeto
+     * @return \DateTime
+     */
+    public function getDateObject()
+    {
+        return new \DateTime($this->timestamp);
+    }
 }
