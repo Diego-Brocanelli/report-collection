@@ -178,7 +178,7 @@ class DateParser
     }
 
     /**
-     * Devolve o timestamp resultante do processo de interretação da data.
+     * Devolve o timestamp resultante do processo de interpretação da data.
      * @return int
      */
     public function getTimestamp()
@@ -187,7 +187,7 @@ class DateParser
     }
 
     /**
-     * Devolve o timestamp resultante do processo de interretação da data
+     * Devolve o timestamp resultante do processo de interpretação da data
      * em formato de data serial do excel.
      * @return float
      */
@@ -197,12 +197,22 @@ class DateParser
     }
 
     /**
-     * Devolve o timestamp resultante do processo de interretação da data
+     * Devolve o timestamp resultante do processo de interpretação da data
      * em formato de objeto
      * @return \DateTime
      */
     public function getDateObject()
     {
-        return new \DateTime($this->timestamp);
+        try {
+            $datetime = new \DateTime;
+            $datetime->setTimestamp($this->timestamp);
+            if ($datetime !== false) {
+                return $datetime;
+            }
+        } catch (\Exception $e) {
+            $this->debug['error'] = $e->getMessage();
+        }
+
+        return false;
     }
 }
