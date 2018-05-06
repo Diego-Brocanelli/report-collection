@@ -5,7 +5,6 @@ namespace ReportCollection\Libs;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use Illuminate\Support\Str;
 
 class Reader
 {
@@ -34,7 +33,7 @@ class Reader
         'xml'      => 'Xml'
     ];
 
-    protected $input_format_date = 'd/m/Y';
+    protected $input_format_date = null;
 
     /**
      * Importa os dados a partir de um array
@@ -216,7 +215,7 @@ class Reader
 
         foreach($instance->readers as $slug => $base) {
 
-            if (Str::lower($extension) == $slug) {
+            if (strtolower($extension) == $slug) {
 
                 $class_name = 'PhpOffice\\PhpSpreadsheet\\Reader\\'.$base;
                 $reader = new $class_name();
@@ -265,25 +264,36 @@ class Reader
                 $column = $count_cols++;
 
                 $value = $cell->getValue();
+                $timezone = date_default_timezone_get();
 
-                // Colunas de data serão retornadas como timestamp
-                if (ExcelDate::isDateTime($cell) == true) {
+                if (empty($value) == false && ExcelDate::isDateTime($cell) == true) {
 
-                    $timezone = date_default_timezone_get();
+                    // Colunas de data serão retornadas como timestamp
                     $value = ExcelDate::excelToDateTimeObject($value, $timezone);
 
-                } elseif(is_string($value)) {
+                } elseif(empty($value) == false && is_string($value)) {
 
-                    $parsed = \DateTime::createFromFormat($this->input_format_date, $value);
-                    if ($parsed !== false) {
-                        $value = $parsed;
+                    // Verifica se é uma data alternativa
+                    // 10.01.80, 10.01.1980, 10-01-80, 10-01-1980, 1980-01-10, 10/01/80, 10/01/80
+                    $value = trim($value);
+                    $timezone = date_default_timezone_get();
+                    $date = DateParser::parse($value, $this->input_format_date, $timezone);
+                    // Com formato forçado $this->input_format_date != null
+                    if ($date !== false) {
+                        $value = $date->getDateObject();
+                    } elseif($this->input_format_date !== null) {
+                        // Com formato automatico
+                        $date = DateParser::parse($value, null, $timezone);
+                        if ($date !== false) {
+                            $value = $date->getDateObject();
+                        }
                     }
                 }
 
                 // Identifica os cabeçalhos e pula a linha
                 if ($count_rows == 0) {
 
-                    if (empty($value)) {
+                    if ($value !== false && empty($value)) {
                         continue;
                     }
                     $headers[$column] = $value;
@@ -320,7 +330,6 @@ class Reader
         } // Linhas
 
         return array_merge([$headers], $extracted);
-
     }
 
     /**

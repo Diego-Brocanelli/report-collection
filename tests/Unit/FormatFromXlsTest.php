@@ -9,37 +9,38 @@ use ReportCollection\Tests\Libs;
 
 class FormatFromXlsTest extends TestCase
 {
-    public function testFormatDots()
+    /*
+    O Arquivo contém os seguintes formatos
+    10.01.80	10.01.1980	10-01-80	10-01-1980	10/01/80	10/01/80
+     */
+
+    public function testForcedInvalidDots()
     {
-        /*
-        10.01.1980
-        10-01-80
-        10-01-1980
-        10/01/80
-        10/01/1980
-        */
         $file = __DIR__ . '/../Files/format-date.xls';
+
         $handle = Reader::createFromXls($file);
-
-        $handle->setInputDateFormat('d.m.y'); // 10.01.80
+        $handle->setInputDateFormat('d.m.y'); // força a detecção de 10.01.80
         $array = $handle->toArray();
-
-        $date_object = $array[0][0];
-        $this->assertEquals($date_object->format('d-m-Y'), '10-01-1980');
-
-        $this->assertTrue(true);
+        $this->assertEquals($array[0][0]->format('d-m-Y'), '10-01-1980'); // invalida 10.01.80
+        $this->assertEquals($array[0][1]->format('d-m-Y'), '10-01-1980'); // 10.01.1980
+        $this->assertEquals($array[0][2], '10-01-80');                     // invalida 10-01-80
+        $this->assertEquals($array[0][3]->format('d-m-Y'), '10-01-1980'); // 10-01-1980
+        $this->assertEquals($array[0][4]->format('d-m-Y'), '10-01-1980'); // 10/01/80
+        $this->assertEquals($array[0][5]->format('d-m-Y'), '10-01-1980'); // 10/01/1980
     }
 
-    public function testFormatBars()
+    public function testForcedInvalidDashs()
     {
         $file = __DIR__ . '/../Files/format-date.xls';
+
         $handle = Reader::createFromXls($file);
-
-        $handle->setInputDateFormat('d/m/Y'); // 10/01/1980
+        $handle->setInputDateFormat('d-m-y'); // força a detecção de 10-01-80
         $array = $handle->toArray();
-
-        $date_object = $array[0][4];
-        $this->assertEquals($date_object->format('d-m-Y'), '10-01-1980');
-
+        $this->assertEquals($array[0][0], '10.01.80');                     // invalida 10.01.80
+        $this->assertEquals($array[0][1]->format('d-m-Y'), '10-01-1980'); // 10.01.1980
+        $this->assertEquals($array[0][2]->format('d-m-Y'), '10-01-1980'); // invalida 10-01-80
+        $this->assertEquals($array[0][3]->format('d-m-Y'), '10-01-1980'); // 10-01-1980
+        $this->assertEquals($array[0][4]->format('d-m-Y'), '10-01-1980'); // 10/01/80
+        $this->assertEquals($array[0][5]->format('d-m-Y'), '10-01-1980'); // 10/01/1980
     }
 }
