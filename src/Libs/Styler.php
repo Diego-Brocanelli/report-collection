@@ -91,19 +91,32 @@ class Styler
      */
     public function setStyles($range, $styles = [])
     {
-        $range = explode(':', $range);
-        $row = (int) $range[0];
-        if (isset($range[1]) == true) {
-            $col = is_numeric($range[1])
-                ? intval($range[1])
-                : $this->getColumnNumber($range[1]);
-        } else {
-            $col = null;
-        }
-
-        $this->applyStyles($row, $col, $styles);
+        $range = $this->resolveRange($range);
+        $this->applyStyles($range['row'], $range['col'], $styles);
 
         return $this;
+    }
+
+    protected function resolveRange($range)
+    {
+        $row = $col = null;
+
+        if (is_numeric($range)) {
+            $row = (int) $range;
+        } else {
+            $matches = [];
+            if (preg_match_all('/([0-9]+|[a-zA-Z]+)/', $range, $matches) > 0) {
+                if (isset($matches[0][1]) == false) {
+                    throw new \InvalidArgumentException('Invalid range');
+                }
+                $row = (int) $matches[0][1];
+                $col = is_numeric($matches[0][0])
+                    ? intval($matches[0][0])
+                    : $this->getColumnNumber($matches[0][0]);
+            }
+        }
+
+        return [ 'row' => $row, 'col' => $col];
     }
 
     /**

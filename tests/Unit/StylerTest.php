@@ -45,4 +45,33 @@ class StylerTest extends TestCase
             )
         ]);
     }
+
+    public function testResolverRange()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $az = $styler->accessGetColumnNumber('AZ');
+        $c = $styler->accessGetColumnNumber('C');
+        $zz = $styler->accessGetColumnNumber('ZZ');
+
+        $this->assertEquals($styler->accessResolveRange('AZ22'), ['row' => 22, 'col' => $az]);
+        $this->assertEquals($styler->accessResolveRange('C5'), ['row' => 5, 'col' => $c]);
+        $this->assertEquals($styler->accessResolveRange('ZZ333'), ['row' => 333, 'col' => $zz]);
+
+        $this->assertEquals($styler->accessResolveRange('22'), ['row' => 22, 'col' => null]);
+        $this->assertEquals($styler->accessResolveRange(45), ['row' => 45, 'col' => null]);
+
+    }
+
+    public function testResolverRangeException()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $this->assertEquals($styler->accessResolveRange('AZ'));
+
+    }
 }

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace ReportCollection\Libs;
 
@@ -12,6 +12,9 @@ class Writer
     /** @var ReportCollection\Libs\Reader */
     private $reader = null;
 
+    /** @var ReportCollection\Libs\Styler */
+    private $styler = null;
+
     /** @var array */
     private $buffer = null;
 
@@ -20,7 +23,7 @@ class Writer
 
     /** @var string */
     private $extension = null;
-    
+
     /** @var array */
     private $writers = [
         'csv'      => 'Csv',
@@ -33,12 +36,10 @@ class Writer
         'xml'      => 'Xml'
     ];
 
-    private $output_format_date = 'd/m/Y';
-
     /**
      * Importa os dados a partir do Reader
-     * 
-     * @param array $array
+     *
+     * @param ReportCollection\Libs\Reader $reader
      */
     public static function createFromReader(Reader $reader)
     {
@@ -48,9 +49,40 @@ class Writer
         return $instance;
     }
 
-    public function setOutputDateFormat($format)
+    /**
+     * Importa os dados a partir do Styler
+     *
+     * @param ReportCollection\Libs\Styler $styler
+     */
+    public static function createFromStyler(Styler $styler)
     {
-        $this->output_format_date = $format;
+        $instance = new self;
+        $instance->styler = $styler;
+        $instance->reader = $styler->getReader();
+
+        return $instance;
+    }
+
+    /**
+     *  Devolve a instancia do Reader.
+     * @return ReportCollection\Libs\Reader
+     */
+    public function getReader()
+    {
+        return $this->reader;
+    }
+
+    /**
+     *  Devolve a instancia do Styler.
+     * @return ReportCollection\Libs\Styler
+     */
+    public function getStyler()
+    {
+        if ($this->styler == null) {
+            $this->styler = Styler::createFromReader($this->getReader());
+        }
+
+        return $this->styler;
     }
 
     private function generateSpreadsheet()
@@ -69,8 +101,8 @@ class Writer
     {
         $basename  = pathinfo($filename, PATHINFO_BASENAME);
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
-        
-        return $this->output($extension, $basename);   
+
+        return $this->output($extension, $basename);
     }
 
     public function output($extension, $name = null)
@@ -137,7 +169,7 @@ class Writer
         header('Content-Disposition: attachment;filename="'.$basename.'"');
         header('Cache-Control: max-age=0');
         header('Cache-Control: max-age=1'); //IE 9
-        
+
         // Para evitar cache no IE
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Data no passado
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); // Sempre modificado
