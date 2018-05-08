@@ -11,14 +11,6 @@ use ReportCollection\Libs\Styler;
  */
 class StylerAccessor extends Styler
 {
-    public static function createFromReader(Reader $reader)
-    {
-        $instance = new self;
-        $instance->reader = $reader;
-
-        return $instance;
-    }
-
     public function accessResolveRange($range)
     {
         return $this->resolveRange($range);
@@ -29,9 +21,9 @@ class StylerAccessor extends Styler
         return $this->getColumnNumber($vowel);
     }
 
-    public function accessResolveBorderStyle($param, $value)
+    public function accessApplyBorderStyle($row, $col, $param, $value)
     {
-        return $this->resolveBorderStyle($param, $value);
+        return $this->applyBorderStyle($row, $col, $param, $value);
     }
 
 }

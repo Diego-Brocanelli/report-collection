@@ -50,7 +50,8 @@ class Styler
      */
     public static function createFromReader(Reader $reader)
     {
-        $instance = new self;
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
         $instance->reader = $reader;
 
         return $instance;
@@ -67,22 +68,35 @@ class Styler
      */
     public function getBuffer()
     {
-        if($this->buffer == null) {
-            $this->buffer = [];
-            foreach ($this->reader->toArray() as $row => $children) {
-                if(isset($this->buffer[$row]) == false) {
-                    $this->buffer[$row] = [];
-                }
+        if($this->buffer !== null) {
+            return $this->buffer;
+        }
 
-                foreach ($children as $col => $value) {
-                    $this->buffer[$row][$col] = [
-                        'value' => $value,
-                        'styles' => []
-                    ];
-                }
+        $this->buffer = [];
+        foreach ($this->reader->toArray() as $row => $children) {
+            if(isset($this->buffer[$row]) == false) {
+                $this->buffer[$row] = [];
+            }
+
+            foreach ($children as $col => $value) {
+                $this->buffer[$row][$col] = [
+                    'value' => $value,
+                    'styles' => []
+                ];
             }
         }
+
         return $this->buffer;
+    }
+
+    /**
+     *  Reseta os dados do buffer, voltando-os para o estado inicial
+     *  recebido do Reader.
+     * @return void
+     */
+    public function resetBuffer()
+    {
+        $this->buffer = null;
     }
 
     /**
@@ -93,16 +107,27 @@ class Styler
     {
         $range = $this->resolveRange($range);
         $this->applyStyles($range['row'], $range['col'], $styles);
-
         return $this;
     }
 
+    /**
+     * Resolve o range especificado no formato do excel, devolvendo
+     * os índces correspondentes aos dados do buffer.
+     * As colunas devem ser vogais e as linhas numeros começando a partir de 1.
+     * Veja os formatos:
+     * - VÁLIDO: coluna + linha (A23)
+     * - VÁLIDO: apenas linha (23)
+     * - INVÁLIDO: apenas coluna (A)
+     * @param  string $range
+     * @return array
+     */
     protected function resolveRange($range)
     {
         $row = $col = null;
 
         if (is_numeric($range)) {
             $row = (int) $range;
+            $row = $row - 1;
         } else {
             $matches = [];
             if (preg_match_all('/([0-9]+|[a-zA-Z]+)/', $range, $matches) > 0) {
@@ -113,6 +138,8 @@ class Styler
                 $col = is_numeric($matches[0][0])
                     ? intval($matches[0][0])
                     : $this->getColumnNumber($matches[0][0]);
+                $row = $row - 1;
+                $col = $col - 1;
             }
         }
 
@@ -156,7 +183,7 @@ class Styler
                 ];
                 // As bordas são aplicadas de forma mais complexa
                 if (in_array($param, $border_styles) == true) {
-                    $value = $this->resolveBorderStyle($param, $value);
+                    return $this->applyBorderStyle($row, $col, $param, $value);
                 }
 
                 $current_styles[$param] = $value;
@@ -164,18 +191,65 @@ class Styler
         }
 
         $this->buffer[$row][$col]['styles'] = $current_styles;
+
+        return true;
     }
 
-    protected function resolveBorderStyle($param, $value)
+    protected function applyBorderStyle($row, $col, $param, $value)
     {
-        // 'border-top-color',
-        // 'border-right-color',
-        // 'border-bottom-color',
-        // 'border-left-color',
-        // 'border-top-style',
-        // 'border-right-style',
-        // 'border-bottom-style',
-        // 'border-left-style',
+        $buffer = $this->getBuffer();
+
+        if (!isset($buffer[$row])) {
+            return false;
+        }
+
+        if (!isset($buffer[$row][$col])) {
+            return false;
+        }
+
+        $names = explode('-', $param);
+        $direction = $names[1]; // top, right, bottom, left
+        $sufix     = $names[2]; // color, style
+
+        // Os estilos de borda são aplicados apenas  no topo e na esquerda
+        // Isso diminui a carga na estilização da planilha e corrige possiveis
+        // bugs no objeto Spreadsheet
+
+        switch($direction) {
+            case 'top':
+                // Aplica na linha atual
+                $this->buffer[$row][$col]['styles'][$param] = $value;
+                break;
+
+            case 'left':
+                // Aplica na coluna atual
+                $this->buffer[$row][$col]['styles'][$param] = $value;
+                break;
+
+            case 'right':
+                if (($col+1) == count($this->buffer[$row])) {
+                    // se for a última coluna, aplica explicitamente
+                    $this->buffer[$row][$col]['styles'][$param] = $value;
+                } else {
+                    // aplica no left da próxima coluna
+                    $param_invert = "border-left-{$sufix}";
+                    $this->buffer[$row][$col+1]['styles'][$param_invert] = $value;
+                }
+                break;
+
+            case 'bottom':
+                if (($row+1) == count($this->buffer)) {
+                    // se for a última linha, aplica explicitamente
+                    $this->buffer[$row][$col]['styles'][$param] = $value;
+                } else {
+                    // aplica no top da próxima linha
+                    $param_invert = "border-top-{$sufix}";
+                    $this->buffer[$row+1][$col]['styles'][$param_invert] = $value;
+                }
+                break;
+        }
+
+        return true;
     }
 
     /**
@@ -214,11 +288,7 @@ class Styler
      */
     public function toArray()
     {
-        if($this->buffer !== null) {
-            return $this->buffer;
-        }
-
-        return $this->buffer;
+        return $this->getBuffer();
     }
 
 }

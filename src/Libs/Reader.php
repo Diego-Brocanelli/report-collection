@@ -42,7 +42,8 @@ class Reader
      */
     public static function createFromArray(array $array)
     {
-        $instance = new self;
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
         $instance->type   = 'array';
         $instance->buffer = $array;
 
@@ -63,7 +64,8 @@ class Reader
      */
     public static function createFromObject($object)
     {
-        $instance = new self;
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
 
         $instance->buffer = null;
 
@@ -96,19 +98,45 @@ class Reader
     }
 
     /**
-     * Importa os dados a partir de um trecho de código html
+     * Importa os dados a a partir de um arquivo.
+     * As extensões suportadas são:
+     * csv, gnumeric, htm, html, ods, slk, xls, xlsx e xml
      *
-     * @param string $string
+     * @param string $filename Arquivo e caminho completo
+     * @param string force_extension para arquivos sem extensão
      */
-    public static function createFromHtmlString($string)
+    public static function createFromFile($filename, $force_extension = null)
     {
-        // Cria um arquivo temporário
-        $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
-        file_put_contents($temp_file, $string);
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
 
-        // Carrega o arquivo na planilha
-        $instance = self::createFromHtml($temp_file);
-        unlink($temp_file);
+        $instance->buffer = null;
+
+        $extension = ($force_extension!=null)
+            ? $force_extension
+            : pathinfo($filename, PATHINFO_EXTENSION);
+
+        $spreadsheet = null;
+
+        foreach($instance->readers as $slug => $base) {
+
+            if (strtolower($extension) == $slug) {
+
+                $class_name = 'PhpOffice\\PhpSpreadsheet\\Reader\\'.$base;
+                $reader = new $class_name();
+                $spreadsheet = $reader->load($filename);
+                break;
+            }
+        }
+
+        if ($spreadsheet == null) {
+            throw new \InvalidArgumentException(
+                "Unsupported file type for reading. Use " . implode(',', $instance->readers));
+        }
+
+        $instance->type      = 'spreadsheet';
+        $instance->extension = $extension;
+        $instance->buffer    = $spreadsheet;
 
         return $instance;
     }
@@ -141,6 +169,24 @@ class Reader
     public static function createFromHtml($filename)
     {
         return self::createFromFile($filename, 'html');
+    }
+
+    /**
+     * Importa os dados a partir de um trecho de código html
+     *
+     * @param string $string
+     */
+    public static function createFromHtmlString($string)
+    {
+        // Cria um arquivo temporário
+        $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
+        file_put_contents($temp_file, $string);
+
+        // Carrega o arquivo na planilha
+        $instance = self::createFromHtml($temp_file);
+        unlink($temp_file);
+
+        return $instance;
     }
 
     /**
@@ -191,49 +237,6 @@ class Reader
     public static function createFromXml($filename)
     {
         return self::createFromFile($filename, 'xml');
-    }
-
-    /**
-     * Importa os dados a a partir de um arquivo.
-     * As extensões suportadas são:
-     * csv, gnumeric, htm, html, ods, slk, xls, xlsx e xml
-     *
-     * @param string $filename Arquivo e caminho completo
-     * @param string force_extension para arquivos sem extensão
-     */
-    public static function createFromFile($filename, $force_extension = null)
-    {
-        $instance = new self;
-
-        $instance->buffer = null;
-
-        $extension = ($force_extension!=null)
-            ? $force_extension
-            : pathinfo($filename, PATHINFO_EXTENSION);
-
-        $spreadsheet = null;
-
-        foreach($instance->readers as $slug => $base) {
-
-            if (strtolower($extension) == $slug) {
-
-                $class_name = 'PhpOffice\\PhpSpreadsheet\\Reader\\'.$base;
-                $reader = new $class_name();
-                $spreadsheet = $reader->load($filename);
-                break;
-            }
-        }
-
-        if ($spreadsheet == null) {
-            throw new \InvalidArgumentException(
-                "Unsupported file type for reading. Use " . implode(',', $instance->readers));
-        }
-
-        $instance->type      = 'spreadsheet';
-        $instance->extension = $extension;
-        $instance->buffer    = $spreadsheet;
-
-        return $instance;
     }
 
     public function setInputDateFormat($format)
