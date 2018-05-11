@@ -86,6 +86,119 @@ class StylerTest extends TestCase
         $this->assertEquals($styler->accessResolveRange('AZ'));
     }
 
+    public function testApplyStyles()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $styler->accessApplyStyles(0, 0, ['background-color' => '#f5f5f5']);
+        $styler->accessApplyStyles(0, 0, ['color' => '#555555']);
+        $styler->accessApplyStyles(0, 0, ['text-align' => 'left']);
+
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
+    }
+
+    public function testSetStyles()
+    {
+        // O método setStyles() usa o método resolveRange() para
+        // transofrmar A3 em indices PHP (linha 0 e coluna 2).
+        // Em seguida, passa os valores da linha e coluna para
+        // o método protegido apllyStyles, testado anteriormente.
+
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        // Setagem indiviual
+        $styler->setStyles('A1', ['background-color' => '#f5f5f5']);
+        $styler->setStyles('A1', ['color' => '#555555']);
+        $styler->setStyles('A1', ['text-align' => 'left']);
+
+        $data = $styler->getBuffer();
+        // Setados
+        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
+        $this->assertEquals('#f5f5f5', $data[0][0]['styles']['background-color']);
+        $this->assertEquals('#555555', $data[0][0]['styles']['color']);
+        $this->assertEquals('left', $data[0][0]['styles']['text-align']);
+        // Não-setados
+        $this->assertArrayNotHasKey('font-face', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('font-size', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('font-weight', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('font-style', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('line-height', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('vertical-align', $data[0][0]['styles']);
+
+        // Setagem múltipla
+        $styler->setStyles('A1', [
+            //'background-color' => não muda
+            'color'              => '#999999', // color deve ser atualizado
+            'font-face'          => 'Arial',
+            'font-size'          => '11',
+            'font-weight'        => 'normal',
+            'font-style'         => 'normal',
+            'line-height'        => '25',
+            //'text-align'       => não muda
+            'vertical-align'     => 'middle',
+        ]);
+
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-face', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-size', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-weight', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-style', $data[0][0]['styles']);
+        $this->assertArrayHasKey('line-height', $data[0][0]['styles']);
+        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
+        $this->assertArrayHasKey('vertical-align', $data[0][0]['styles']);
+
+        $this->assertEquals('#f5f5f5', $data[0][0]['styles']['background-color']); // o mesmo valor
+        $this->assertEquals('#999999', $data[0][0]['styles']['color']);
+        $this->assertEquals('Arial', $data[0][0]['styles']['font-face']);
+        $this->assertEquals('11', $data[0][0]['styles']['font-size']);
+        $this->assertEquals('normal', $data[0][0]['styles']['font-weight']);
+        $this->assertEquals('normal', $data[0][0]['styles']['font-style']);
+        $this->assertEquals('25', $data[0][0]['styles']['line-height']);
+        $this->assertEquals('left', $data[0][0]['styles']['text-align']); // o mesmo valor
+        $this->assertEquals('middle', $data[0][0]['styles']['vertical-align']);
+
+        // Setar como none, remove o estilo
+        $styler->setStyles('A1', [
+            'color'              => 'none',
+            'font-style'         => 'none',
+            'line-height'        => 'none',
+        ]);
+
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('color', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('font-style', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('line-height', $data[0][0]['styles']);
+
+        $this->assertArrayHasKey('font-face', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-size', $data[0][0]['styles']);
+        $this->assertArrayHasKey('font-weight', $data[0][0]['styles']);
+        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
+        $this->assertArrayHasKey('vertical-align', $data[0][0]['styles']);
+
+        // TODO verificar remoção de bordas!!
+
+    }
+
+    public function testSetStylesException()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $styler->setStyles('A1', ['super-mega-blaster' => '777']);
+    }
+
     public function testApplyBorderStyleRow()
     {
         $reader = Reader::createFromArray($this->provider);
@@ -241,12 +354,9 @@ class StylerTest extends TestCase
 
     public function testApplyBorderStyleFromStylesSetter()
     {
-        $this->asserTrue(true);
+        $this->assertTrue(true);
     }
 
-    public function testApplyStyles()
-    {
-        $this->asserTrue(true);
-    }
+
 
 }

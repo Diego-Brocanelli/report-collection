@@ -21,6 +21,11 @@ class StylerAccessor extends Styler
         return $this->getColumnNumber($vowel);
     }
 
+    public function accessApplyStyles($row, $col, $styles)
+    {
+        return $this->applyStyles($row, $col, $styles);
+    }
+
     public function accessApplyBorderStyle($row, $col, $param, $value)
     {
         return $this->applyBorderStyle($row, $col, $param, $value);

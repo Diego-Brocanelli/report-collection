@@ -16,31 +16,28 @@ class Styler
 
     /** @var array */
     private $default_styles = [
-
         'background-color'    => '#f5f5f5',
-
         'border-top-color'    => '#555555',
         'border-right-color'  => '#555555',
         'border-bottom-color' => '#555555',
         'border-left-color'   => '#555555',
-
-        // none,
+        // border-xx-style determinam a forma como as linhas serão
+        // desenhadas. As seguintes opções estão disponíveis:
         // dash-dot, dash-dot-dot, dashed, dotted, double, hair, medium,
         // medium-dash-dot, medium-dashed, slant-dash-dot, thick, thin
+        // none
         'border-top-style'    => 'thick',
         'border-right-style'  => 'thick',
         'border-bottom-style' => 'thick',
         'border-left-style'   => 'thick',
-
-        'line-height'    => '25',
-
         'color'          => '#555555',
         'font-face'      => 'Arial',
         'font-size'      => '11',
         'font-weight'    => 'normal',
         'font-style'     => 'normal',
-        'vertical-align' => 'middle',
+        'line-height'    => '25',
         'text-align'     => 'left',
+        'vertical-align' => 'middle',
     ];
 
     /**
@@ -148,7 +145,10 @@ class Styler
 
     /**
      * Aplica os estilos.
-     * @param [type] $styles [description]
+     * @param  int $row
+     * @param  int $col
+     * @param  array $styles
+     * @return bool
      */
     protected function applyStyles($row, $col, $styles)
     {
@@ -168,7 +168,7 @@ class Styler
 
             if (!isset($this->getDefaultStyles()[$param])) {
                 // Apenas estilos válidos são permitidos
-                throw new InvalidArgumentException("Invalid style {$param}");
+                throw new \InvalidArgumentException("Invalid style {$param}");
             } else {
 
                 $border_styles = [
@@ -186,7 +186,13 @@ class Styler
                     return $this->applyBorderStyle($row, $col, $param, $value);
                 }
 
-                $current_styles[$param] = $value;
+                if ($value == 'none' && isset($current_styles[$param])) {
+                    unset($current_styles[$param]);
+                }
+
+                if ($value != 'none') {
+                    $current_styles[$param] = $value;
+                }
             }
         }
 
@@ -207,49 +213,102 @@ class Styler
             return false;
         }
 
-        $names = explode('-', $param);
-        $direction = $names[1]; // top, right, bottom, left
-        $sufix     = $names[2]; // color, style
-
         // Os estilos de borda são aplicados apenas  no topo e na esquerda
         // Isso diminui a carga na estilização da planilha e corrige possiveis
         // bugs no objeto Spreadsheet
 
+        $names = explode('-', $param);
+        $direction = $names[1]; // top, right, bottom, left
+
         switch($direction) {
             case 'top':
-                // Aplica na linha atual
-                $this->buffer[$row][$col]['styles'][$param] = $value;
+                $this->applyBorderTop($row, $col, $param, $value);
                 break;
 
             case 'left':
-                // Aplica na coluna atual
-                $this->buffer[$row][$col]['styles'][$param] = $value;
+                $this->applyBorderLeft($row, $col, $param, $value);
                 break;
 
             case 'right':
-                if (($col+1) == count($this->buffer[$row])) {
-                    // se for a última coluna, aplica explicitamente
-                    $this->buffer[$row][$col]['styles'][$param] = $value;
-                } else {
-                    // aplica no left da próxima coluna
-                    $param_invert = "border-left-{$sufix}";
-                    $this->buffer[$row][$col+1]['styles'][$param_invert] = $value;
-                }
+                $this->applyBorderRight($row, $col, $param, $value);
                 break;
 
             case 'bottom':
-                if (($row+1) == count($this->buffer)) {
-                    // se for a última linha, aplica explicitamente
-                    $this->buffer[$row][$col]['styles'][$param] = $value;
-                } else {
-                    // aplica no top da próxima linha
-                    $param_invert = "border-top-{$sufix}";
-                    $this->buffer[$row+1][$col]['styles'][$param_invert] = $value;
-                }
+                $this->applyBorderBottom($row, $col, $param, $value);
                 break;
         }
 
         return true;
+    }
+
+    protected function applyBorderTop($row, $col, $param, $value)
+    {
+        if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
+            unset($this->buffer[$row][$col]['styles'][$param]);
+        }
+
+        if ($value != 'none') {
+            // Aplica na linha atual
+            $this->buffer[$row][$col]['styles'][$param] = $value;
+        }
+    }
+
+    protected function applyBorderLeft($row, $col, $param, $value)
+    {
+        if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
+            unset($this->buffer[$row][$col]['styles'][$param]);
+        }
+
+        if ($value != 'none') {
+            // Aplica na coluna atual
+            $this->buffer[$row][$col]['styles'][$param] = $value;
+        }
+    }
+
+    protected function applyBorderRight($row, $col, $param, $value)
+    {
+        $names = explode('-', $param);
+        //$direction = $names[1]; // top, right, bottom, left
+        $sufix     = $names[2]; // color, style
+
+        if (($col+1) == count($this->buffer[$row])) {
+            // se for a última coluna, aplica explicitamente
+        } else {
+            // aplica no left da próxima coluna
+            $param = "border-left-{$sufix}";
+            $col = $col+1;
+        }
+
+        if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
+            unset($this->buffer[$row][$col]['styles'][$param]);
+        }
+
+        if ($value != 'none') {
+            $this->buffer[$row][$col]['styles'][$param] = $value;
+        }
+    }
+
+    protected function applyBorderBottom($row, $col, $param, $value)
+    {
+        $names = explode('-', $param);
+        //$direction = $names[1]; // top, right, bottom, left
+        $sufix     = $names[2]; // color, style
+
+        if (($row+1) == count($this->buffer)) {
+            // se for a última linha, aplica explicitamente
+        } else {
+            // aplica no top da próxima linha
+            $param = "border-top-{$sufix}";
+            $row = $row+1;
+        }
+
+        if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
+            unset($this->buffer[$row][$col]['styles'][$param]);
+        }
+
+        if ($value != 'none') {
+            $this->buffer[$row][$col]['styles'][$param] = $value;
+        }
     }
 
     /**
