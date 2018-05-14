@@ -97,14 +97,13 @@ class Styler
     }
 
     /**
-     * Aplica estilos no range especificado.
-     * @return array
+     * Aplica estilos com base nos indices do Excel.
+     * @return bool
      */
     public function setStyles($range, $styles = [])
     {
         $range = $this->resolveRange($range);
-        $this->applyStyles($range['row'], $range['col'], $styles);
-        return $this;
+        return $this->applyStyles($range['row'], $range['col'], $styles);
     }
 
     /**
@@ -144,7 +143,7 @@ class Styler
     }
 
     /**
-     * Aplica os estilos.
+     * Aplica os estilos com base nos indices PHP.
      * @param  int $row
      * @param  int $col
      * @param  array $styles
@@ -164,6 +163,7 @@ class Styler
 
         $current_styles = $this->buffer[$row][$col]['styles'];
 
+        $results = [];
         foreach ($styles as $param => $value) {
 
             if (!isset($this->getDefaultStyles()[$param])) {
@@ -183,7 +183,7 @@ class Styler
                 ];
                 // As bordas são aplicadas de forma mais complexa
                 if (in_array($param, $border_styles) == true) {
-                    return $this->applyBorderStyle($row, $col, $param, $value);
+                    $results[$param] = $this->applyBorderStyle($row, $col, $param, $value);
                 }
 
                 if ($value == 'none' && isset($current_styles[$param])) {
@@ -191,16 +191,25 @@ class Styler
                 }
 
                 if ($value != 'none') {
-                    $current_styles[$param] = $value;
+                    $current_styles[$param]    = $value;
                 }
             }
         }
 
         $this->buffer[$row][$col]['styles'] = $current_styles;
 
-        return true;
+        $results = array_unique($results);
+        return (count($results) == 0 || current($results) === true) ? true : false;
     }
 
+    /**
+     * Aplica os estilos para bordas com base nos indices PHP.
+     * @param  int $row
+     * @param  int $col
+     * @param  string $param
+     * @param  string $value
+     * @return bool
+     */
     protected function applyBorderStyle($row, $col, $param, $value)
     {
         $buffer = $this->getBuffer();

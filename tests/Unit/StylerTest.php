@@ -86,21 +86,6 @@ class StylerTest extends TestCase
         $this->assertEquals($styler->accessResolveRange('AZ'));
     }
 
-    public function testApplyStyles()
-    {
-        $reader = Reader::createFromArray($this->provider);
-        $styler = Libs\StylerAccessor::createFromReader($reader);
-
-        $styler->accessApplyStyles(0, 0, ['background-color' => '#f5f5f5']);
-        $styler->accessApplyStyles(0, 0, ['color' => '#555555']);
-        $styler->accessApplyStyles(0, 0, ['text-align' => 'left']);
-
-        $data = $styler->getBuffer();
-        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
-        $this->assertArrayHasKey('color', $data[0][0]['styles']);
-        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
-    }
-
     public function testSetStyles()
     {
         // O método setStyles() usa o método resolveRange() para
@@ -185,8 +170,44 @@ class StylerTest extends TestCase
         $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
         $this->assertArrayHasKey('vertical-align', $data[0][0]['styles']);
 
-        // TODO verificar remoção de bordas!!
+        $data = $styler->getBuffer();
+        $this->assertArrayNotHasKey('border-top-color', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('border-left-color', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('border-top-style', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('border-left-style', $data[0][0]['styles']);
 
+        $styler->setStyles('A1', [
+            'border-top-color'  => '#fff000',
+            'border-left-color' => '#000000',
+            'border-left-style' => 'dashed'
+        ]);
+        $styler->setStyles('A1', [
+            'border-top-style'  => 'dotted',
+        ]);
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('border-top-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('border-left-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('border-top-style', $data[0][0]['styles']);
+        $this->assertArrayHasKey('border-left-style', $data[0][0]['styles']);
+        $this->assertEquals('#fff000', $data[0][0]['styles']['border-top-color']);
+        $this->assertEquals('#000000', $data[0][0]['styles']['border-left-color']);
+        $this->assertEquals('dotted', $data[0][0]['styles']['border-top-style']);
+        $this->assertEquals('dashed', $data[0][0]['styles']['border-left-style']);
+
+        // Setar como none, remove o estilo
+        $styler->setStyles('A1', [
+            'border-left-color' => 'none',
+            'border-left-style' => 'none',
+        ]);
+
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('border-top-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('border-top-style', $data[0][0]['styles']);
+        $this->assertEquals('#fff000', $data[0][0]['styles']['border-top-color']);
+        $this->assertEquals('dotted', $data[0][0]['styles']['border-top-style']);
+
+        $this->assertArrayNotHasKey('border-left-color', $data[0][0]['styles']);
+        $this->assertArrayNotHasKey('border-left-style', $data[0][0]['styles']);
     }
 
     public function testSetStylesException()
@@ -199,19 +220,107 @@ class StylerTest extends TestCase
         $styler->setStyles('A1', ['super-mega-blaster' => '777']);
     }
 
+    public function testSetStylesBoolean()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        /*----------A----------------+-------B---------+-------C--------+
+      1 | Company                    | Contact         | Country        |
+        +----------------------------+-----------------+----------------+
+      2 | Alfreds Futterkiste        | Maria Anders    | Germany        |
+        +----------------------------+-----------------+----------------+
+      3 | Centro comercial Moctezuma | Francisco Chang | Mexico         |
+        +----------------------------+-----------------+----------------+
+      4 | Ernst Handel               | Roland Mendel   | Austria        |
+        +----------------------------+-----------------+---------------*/
+
+        // TRUE Rotina normal
+        $this->assertTrue($styler->setStyles('C1', ['color' => '#777']));
+        $this->assertTrue($styler->setStyles('A4', ['color' => '#777']));
+        // TRUE Rotina de bordas
+        $this->assertTrue($styler->setStyles('C1', ['border-top-color' => '#777']));
+        $this->assertTrue($styler->setStyles('A4', ['border-top-color' => '#777']));
+
+        // FALSE Rotina normal
+        // Setagens para indices inexistentes retornam false
+        $this->assertFalse($styler->setStyles('D1', ['color' => '#777']));
+        $this->assertFalse($styler->setStyles('A5', ['color' => '#777']));
+        // FALSE Rotina de bordas
+        $this->assertFalse($styler->setStyles('D1', ['border-top-color' => '#777']));
+        $this->assertFalse($styler->setStyles('A5', ['border-top-color' => '#777']));
+    }
+
+    public function testApplyStyles()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $styler->accessApplyStyles(0, 0, ['background-color' => '#f5f5f5']);
+        $styler->accessApplyStyles(0, 0, ['color' => '#555555']);
+        $styler->accessApplyStyles(0, 0, ['text-align' => 'left']);
+
+        $data = $styler->getBuffer();
+        $this->assertArrayHasKey('background-color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('color', $data[0][0]['styles']);
+        $this->assertArrayHasKey('text-align', $data[0][0]['styles']);
+    }
+
+    public function testApplyStylesException()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        $styler->accessApplyStyles(0, 0, ['super-mega-blaster' => '777']);
+    }
+
+    public function testApplyStylesBoolean()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $styler = Libs\StylerAccessor::createFromReader($reader);
+
+        /*-----------0---------------+--------1--------+--------2-------+
+      0 | Company                    | Contact         | Country        |
+        +----------------------------+-----------------+----------------+
+      1 | Alfreds Futterkiste        | Maria Anders    | Germany        |
+        +----------------------------+-----------------+----------------+
+      2 | Centro comercial Moctezuma | Francisco Chang | Mexico         |
+        +----------------------------+-----------------+----------------+
+      3 | Ernst Handel               | Roland Mendel   | Austria        |
+        +----------------------------+-----------------+---------------*/
+
+        // TRUE Rotina normal
+        $this->assertTrue($styler->accessApplyStyles(3, 0, ['color' => '#777']));
+        $this->assertTrue($styler->accessApplyStyles(0, 2, ['color' => '#777']));
+        // TRUE Rotina de bordas
+        $this->assertTrue($styler->accessApplyStyles(3, 2, ['border-top-color' => '#777']));
+        $this->assertTrue($styler->accessApplyStyles(0, 2, ['border-top-color' => '#777']));
+
+        // FALSE Rotina normal
+        // Setagens para indices inexistentes retornam false
+        $this->assertFalse($styler->accessApplyStyles(4, 0, ['color' => '#777']));
+        $this->assertFalse($styler->accessApplyStyles(0, 3, ['color' => '#777']));
+        // FALSE Rotina de bordas
+        $this->assertFalse($styler->accessApplyStyles(4, 0, ['border-top-color' => '#777']));
+        $this->assertFalse($styler->accessApplyStyles(0, 3, ['border-top-color' => '#777']));
+
+    }
+
     public function testApplyBorderStyleRow()
     {
         $reader = Reader::createFromArray($this->provider);
         $styler = Libs\StylerAccessor::createFromReader($reader);
 
-        /*---------------------------+-----------------+----------------+
-        | Company                    | Contact         | Country        |
+        /*-----------0---------------+--------1--------+--------2-------+
+      0 | Company                    | Contact         | Country        |
         +----------------------------+-----------------+----------------+
-        | Alfreds Futterkiste        | Maria Anders    | Germany        |
+      1 | Alfreds Futterkiste        | Maria Anders    | Germany        |
         +----------------------------+-----------------+----------------+
-        | Centro comercial Moctezuma | Francisco Chang | Mexico         |
+      2 | Centro comercial Moctezuma | Francisco Chang | Mexico         |
         +----------------------------+-----------------+----------------+
-        | Ernst Handel               | Roland Mendel   | Austria        |
+      3 | Ernst Handel               | Roland Mendel   | Austria        |
         +----------------------------+-----------------+---------------*/
 
         // NOTA 1:
