@@ -60,6 +60,15 @@ class Styler
     }
 
     /**
+     *  Devolve o reader usado para a estilização dos dados.
+     * @return array
+     */
+    public function getReader()
+    {
+        return $this->reader;
+    }
+    
+    /**
      *  Devolve os dados estruturados para estilização.
      * @return array
      */
