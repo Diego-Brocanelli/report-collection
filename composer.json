@@ -11,7 +11,6 @@
     ],
     "require": {
         "php": ">=7.0.0",
-        "laravel/framework": "~5.5",
         "phpoffice/phpspreadsheet": "^1.2",
         "mpdf/mpdf": "^7.0"
     },
@@ -42,8 +41,5 @@
                 "ReportCollection": "ReportCollection\\Facade"
             }
         }
-    },
-    "require-dev": {
-        "illuminate/framework": "5.5.x"
     }
 }
