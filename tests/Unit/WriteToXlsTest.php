@@ -27,6 +27,7 @@ class WriteToXlsTest extends TestCase
             'border-top-style'   => 'thick',
             'border-top-color'   => '#0000ff',
             'background-color'   => '#ff0000',
+            'background-fill'    => 'dark-down',
             'color'              => '#fffff0', // color deve ser atualizado
             'font-face'          => 'Arial',
             'font-size'          => '11',

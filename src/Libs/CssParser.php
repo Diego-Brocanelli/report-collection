@@ -44,25 +44,42 @@ class CssParser
     protected function parseStyles($styles)
     {
         foreach ($styles as $param => $value) {
+
             if(in_array($param, $this->color_params) == true) {
                 $hex = $this->parseHex($value);
                 $styles[$param] = new Style\Color($hex);
+
             } elseif(in_array($param, $this->border_style_params) == true) {
                 $styles[$param] = $this->getMappedBorderStyle($value);
+
             } elseif ($param == 'text-align') {
                 $styles[$param] = $this->getMappedHorizontalAlign($value);
+
             } elseif ($param == 'vertical-align') {
                 $styles[$param] = $this->getMappedVerticalAlign($value);
+
             } elseif ($param == 'font-face') {
                 $styles[$param] = $value;
+
             } elseif ($param == 'font-size' || $param == 'line-height') {
                 $styles[$param] = preg_replace('#[^0-9]#', '', $value);
+
             } elseif ($param == 'font-weight') {
                 $styles[$param] = ($value=='bold');
+
             } elseif ($param == 'font-style') {
                 $styles[$param] = ($value=='italic');
+
+            } elseif ($param == 'background-fill') {
+                $styles[$param] = $this->getMappedBackgroundFill($value);
             }
         }
+
+        // Para que o fundo possa existir
+        if (isset($styles['background-color']) == true && isset($styles['background-fill']) == false) {
+            $styles['background-fill'] = Style\Fill::FILL_SOLID;
+        }
+
         return $styles;
     }
 
@@ -159,5 +176,41 @@ class CssParser
         return isset($map[$param])
             ? $map[$param]
             : Style\Border::BORDER_NONE;
+    }
+
+    /**
+     * Devolve o parâmetro correto de um preenchimento para cores de fundo,
+     * com base nas constantes da biblioteca PHPSpreadsheet
+     * @return string
+     */
+    private function getMappedBackgroundFill($param)
+    {
+        $map = [
+            'none'             => Style\Fill::FILL_NONE,
+            'solid'            => Style\Fill::FILL_SOLID,
+            'linear'           => Style\Fill::FILL_GRADIENT_LINEAR,
+            'path'             => Style\Fill::FILL_GRADIENT_PATH,
+            'dark-down'        => Style\Fill::FILL_PATTERN_DARKDOWN,
+            'dark-gray'        => Style\Fill::FILL_PATTERN_DARKGRAY,
+            'dark-grid'        => Style\Fill::FILL_PATTERN_DARKGRID,
+            'dark-horizontal'  => Style\Fill::FILL_PATTERN_DARKHORIZONTAL,
+            'dark-trellis'     => Style\Fill::FILL_PATTERN_DARKTRELLIS,
+            'dark-up'          => Style\Fill::FILL_PATTERN_DARKUP,
+            'dark-vertical'    => Style\Fill::FILL_PATTERN_DARKVERTICAL,
+            'gray-0625'        => Style\Fill::FILL_PATTERN_GRAY0625,
+            'gray-125'         => Style\Fill::FILL_PATTERN_GRAY125,
+            'light-down'       => Style\Fill::FILL_PATTERN_LIGHTDOWN,
+            'light-gray'       => Style\Fill::FILL_PATTERN_LIGHTGRAY,
+            'light-grid'       => Style\Fill::FILL_PATTERN_LIGHTGRID,
+            'light-horizontal' => Style\Fill::FILL_PATTERN_LIGHTHORIZONTAL,
+            'light-trellis'    => Style\Fill::FILL_PATTERN_LIGHTTRELLIS,
+            'light-up'         => Style\Fill::FILL_PATTERN_LIGHTUP,
+            'light-vertical'   => Style\Fill::FILL_PATTERN_LIGHTVERTICAL,
+            'medium-gray'      => Style\Fill::FILL_PATTERN_MEDIUMGRAY
+        ];
+
+        return isset($map[$param])
+            ? $map[$param]
+            : Style\Fill::FILL_SOLID;
     }
 }

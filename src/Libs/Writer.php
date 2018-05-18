@@ -21,6 +21,9 @@ class Writer
     /** @var string */
     private $extension = null;
 
+    /** @var PhpOffice\PhpSpreadsheet\Spreadsheet */
+    private $spreadsheet = null;
+
     /** @var array */
     private $writers = [
         'csv'      => 'Csv',
@@ -97,10 +100,13 @@ class Writer
         $this->getStyler()->getBuffer();
     }
 
-    private function generateSpreadsheet()
+    private function getSpreadsheet()
     {
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getProperties()
+        if ($this->spreadsheet != null) {
+            return $this->spreadsheet;
+        }
+        $this->spreadsheet = new Spreadsheet();
+        $this->spreadsheet->getProperties()
             ->setCreator("Report Collection")
             ->setLastModifiedBy("Rocardo Pereira <>")
             ->setTitle("Office 2007 XLSX Test Document")
@@ -111,7 +117,7 @@ class Writer
             ->setKeywords("office 2007 openxml php")
             ->setCategory("Test result file");
 
-        $spreadsheet->setActiveSheetIndex(0);
+        $this->spreadsheet->setActiveSheetIndex(0);
 
         $buffer = $this->getStyler()->getBuffer();
 
@@ -129,16 +135,16 @@ class Writer
                 $this->calcColumnWidth($vowel, $text);
 
                 // Aplica o valor
-                $spreadsheet->getActiveSheet()->getCell("{$vowel}{$line}")
+                $this->spreadsheet->getActiveSheet()->getCell("{$vowel}{$line}")
                     ->setValue($text);
 
-                $cell = $spreadsheet->getActiveSheet()->getStyle("{$vowel}{$line}");
+                $cell = $this->spreadsheet->getActiveSheet()->getStyle("{$vowel}{$line}");
 
                 foreach($styles as $param => $value) {
                     switch($param) {
                         case 'background-color':
                             $cell->getFill()
-                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->setFillType($styles['background-fill'])
                                 ->setStartColor($value);
                             break;
 
@@ -214,17 +220,17 @@ class Writer
         foreach ($buffer[0] as $col => $nulled) {
             $vowel = $this->getColumnVowel($col);
             $width = $this->getColumnWidth($vowel);
-            $spreadsheet->getActiveSheet()
+            $this->spreadsheet->getActiveSheet()
                 ->getColumnDimension($vowel)->setWidth($width);
         }
 
         // Altura das linhas
         foreach ($this->line_heights as $line => $height) {
-            $spreadsheet->getActiveSheet()
+            $this->spreadsheet->getActiveSheet()
                 ->getRowDimension($line)->setRowHeight($height);
         }
 
-        return $spreadsheet;
+        return $this->spreadsheet;
 
         // $spreadsheet->getActiveSheet()->getPageSetup()->setHorizontalCentered(true);
         // $spreadsheet->getActiveSheet()->getPageSetup()->setVerticalCentered(false);
@@ -370,9 +376,9 @@ class Writer
 
             if ($extension == $slug && $slug == 'pdf') {
                 IOFactory::registerWriter('CustomPDF', PDFWriter::class);
-                $factory = IOFactory::createWriter($this->generateSpreadsheet(), 'CustomPDF');
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomPDF');
             } elseif ($extension == $slug) {
-                $factory = IOFactory::createWriter($this->generateSpreadsheet(), $writer);
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), $writer);
             }
         }
 

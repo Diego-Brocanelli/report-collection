@@ -17,6 +17,7 @@ class Styler
     /** @var array */
     private $default_styles = [
         'background-color'    => '#f5f5f5',
+        'background-fill'     => 'solid',
         'border-top-color'    => '#555555',
         'border-right-color'  => '#555555',
         'border-bottom-color' => '#555555',
@@ -67,7 +68,7 @@ class Styler
     {
         return $this->reader;
     }
-    
+
     /**
      *  Devolve os dados estruturados para estilização.
      * @return array
