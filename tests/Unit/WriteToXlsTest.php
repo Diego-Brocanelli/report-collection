@@ -23,7 +23,7 @@ class WriteToXlsTest extends TestCase
         $reader = Reader::createFromArray($this->provider);
         $styler = Styler::createFromReader($reader);
 
-        $styler->setStyles('A1', [
+        $styler->setStyles('1', [
             'border-top-style'   => 'thick',
             'border-top-color'   => '#0000ff',
             'background-color'   => '#ff0000',

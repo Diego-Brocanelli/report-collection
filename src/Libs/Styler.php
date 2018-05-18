@@ -113,17 +113,38 @@ class Styler
     public function setStyles($range, $styles = [])
     {
         $range = $this->resolveRange($range);
-        return $this->applyStyles($range['row'], $range['col'], $styles);
+
+        if ($range['row'] !== null && $range['col'] !== null) {
+            // Coluna e linha especificados: AC22
+            return $this->applyStyles($range['row'], $range['col'], $styles);
+        } else {
+            $buffer = $this->getBuffer();
+            $apply_result = true;
+            if ($range['row'] !== null) {
+                // Apenas linha especificada: 22
+                foreach ($buffer[0] as $col => $data) {
+                    $result = $this->applyStyles($range['row'], $col, $styles);
+                    $apply_result = $result == false ? false : $apply_result;
+                }
+            } else {
+                // Apenas Coluna especificada: AC
+                foreach ($buffer as $row => $cols) {
+                    $result = $this->applyStyles($row, $range['col'], $styles);
+                    $apply_result = $result == false ? false : $apply_result;
+                }
+            }
+            return $apply_result;
+        }
     }
 
     /**
      * Resolve o range especificado no formato do excel, devolvendo
-     * os índces correspondentes aos dados do buffer.
+     * os índices correspondentes aos dados do buffer.
      * As colunas devem ser vogais e as linhas numeros começando a partir de 1.
      * Veja os formatos:
-     * - VÁLIDO: coluna + linha (A23)
-     * - VÁLIDO: apenas linha (23)
-     * - INVÁLIDO: apenas coluna (A)
+     * - coluna + linha (A23)
+     * - apenas linha (23)
+     * - apenas coluna (A)
      * @param  string $range
      * @return array
      */
@@ -137,14 +158,19 @@ class Styler
         } else {
             $matches = [];
             if (preg_match_all('/([0-9]+|[a-zA-Z]+)/', $range, $matches) > 0) {
-                if (isset($matches[0][1]) == false) {
-                    throw new \InvalidArgumentException('Invalid range');
+
+                // Há vogais seguidas de números
+                if (isset($matches[0][1]) == true) {
+                    $row = (int) $matches[0][1];
+                    $row = $row - 1;
+                } else {
+                    // Não há numeros, apenas vogais
+                    // $row será null
                 }
-                $row = (int) $matches[0][1];
+
                 $col = is_numeric($matches[0][0])
                     ? intval($matches[0][0])
                     : $this->getColumnNumber($matches[0][0]);
-                $row = $row - 1;
                 $col = $col - 1;
             }
         }

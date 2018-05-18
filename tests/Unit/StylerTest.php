@@ -74,16 +74,8 @@ class StylerTest extends TestCase
 
         $this->assertEquals($styler->accessResolveRange('22'), ['row' => 21, 'col' => null]);
         $this->assertEquals($styler->accessResolveRange(45), ['row' => 44, 'col' => null]);
-    }
 
-    public function testResolveRangeException()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $reader = Reader::createFromArray($this->provider);
-        $styler = Libs\StylerAccessor::createFromReader($reader);
-
-        $this->assertEquals($styler->accessResolveRange('AZ'));
+        $this->assertEquals($styler->accessResolveRange('AZ'), ['row' => null, 'col' => $az]);
     }
 
     public function testSetStyles()
@@ -209,6 +201,9 @@ class StylerTest extends TestCase
         $this->assertArrayNotHasKey('border-left-color', $data[0][0]['styles']);
         $this->assertArrayNotHasKey('border-left-style', $data[0][0]['styles']);
     }
+
+    // TODO
+    // Testar setagem de estilos em uma linha inteira e em uma coluna inteira
 
     public function testSetStylesException()
     {
