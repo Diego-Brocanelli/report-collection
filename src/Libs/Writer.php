@@ -4,6 +4,7 @@ namespace ReportCollection\Libs;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use ReportCollection\Libs\CssParser;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class Writer
@@ -31,6 +32,9 @@ class Writer
         'xlsx'     => 'Xlsx',
         'xml'      => 'Xml'
     ];
+
+    /** @var array */
+    private $line_heights = [];
 
     /** @var array */
     private $colums_widths = [];
@@ -111,18 +115,116 @@ class Writer
 
         $buffer = $this->getStyler()->getBuffer();
 
-        foreach ($styler as $row => $cols) {
+        $line_heights = [];
+        foreach ($buffer as $row => $cols) {
             $line = $row+1;
-            foreach ($cols as $col => $text) {
-                $vowel = $this->getColumnVowel($col);
+            foreach ($cols as $col => $cell) {
+
+                $column = $col+1;
+                $text   = $cell['value'];
+                $styles = CssParser::parse($cell['styles']);
+
+                $vowel = $this->getColumnVowel($column);
                 // Calcula a largura da coluna
                 $this->calcColumnWidth($vowel, $text);
 
                 // Aplica o valor
                 $spreadsheet->getActiveSheet()->getCell("{$vowel}{$line}")
                     ->setValue($text);
+
+                $cell = $spreadsheet->getActiveSheet()->getStyle("{$vowel}{$line}");
+
+                foreach($styles as $param => $value) {
+                    switch($param) {
+                        case 'background-color':
+                            $cell->getFill()
+                                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                                ->setStartColor($value);
+                            break;
+
+                        case 'color':
+                            $cell->getFont()->setColor($value);
+                            break;
+
+                        case 'font-face':
+                            $cell->getFont()->setName($value);
+                            break;
+
+                        case 'font-size':
+                            $cell->getFont()->setSize($value);
+                            break;
+
+                        case 'font-weight':
+                            $cell->getFont()->setBold($value);
+                            break;
+
+                        case 'font-style':
+                            $cell->getFont()->setItalic($value);
+                            break;
+
+                        case 'line-height':
+                            $this->calcLineHeight($line, $value);
+                            break;
+
+                        case 'vertical-align':
+                            $cell->getAlignment()->setVertical($value);
+                            break;
+
+                        case 'text-align':
+                            $cell->getAlignment()->setHorizontal($value);
+                            break;
+
+                        case 'border-top-color':
+                            $cell->getBorders()->getTop()->setColor($value);
+                            break;
+
+                        case 'border-right-color':
+                            $cell->getBorders()->getRight()->setColor($value);
+                            break;
+
+                        case 'border-bottom-color':
+                            $cell->getBorders()->getBottom()->setColor($value);
+                            break;
+
+                        case 'border-left-color':
+                            $cell->getBorders()->getLeft()->setColor($value);
+                            break;
+
+                        case 'border-top-style':
+                            $cell->getBorders()->getTop()->setBorderStyle($value);
+                            break;
+
+                        case 'border-right-style':
+                            $cell->getBorders()->getRight()->setBorderStyle($value);
+                            break;
+
+                        case 'border-bottom-style':
+                            $cell->getBorders()->getBottom()->setBorderStyle($value);
+                            break;
+
+                        case 'border-left-style':
+                            $cell->getBorders()->getLeft()->setBorderStyle($value);
+                            break;
+                    }
+                }
             }
         }
+
+        // Largura das colunas
+        foreach ($buffer[0] as $col => $nulled) {
+            $vowel = $this->getColumnVowel($col);
+            $width = $this->getColumnWidth($vowel);
+            $spreadsheet->getActiveSheet()
+                ->getColumnDimension($vowel)->setWidth($width);
+        }
+
+        // Altura das linhas
+        foreach ($this->line_heights as $line => $height) {
+            $spreadsheet->getActiveSheet()
+                ->getRowDimension($line)->setRowHeight($height);
+        }
+
+        return $spreadsheet;
 
         // $spreadsheet->getActiveSheet()->getPageSetup()->setHorizontalCentered(true);
         // $spreadsheet->getActiveSheet()->getPageSetup()->setVerticalCentered(false);
@@ -194,17 +296,37 @@ class Writer
         //             ->getColumnDimension($vowel)->setWidth($col_width[$vowel]);
     }
 
-    private function calcColumnWidth($col, $text)
+    private function calcLineHeight($line, $int)
     {
-        if(!isset($this->colums_widths[$col])) {
-            $this->colums_widths[$col] = 5;
+        $height = $this->getLineHeight($line);
+        if ($height < $int) {
+            $this->line_heights[$line] = $int;
         }
+    }
 
+    private function getLineHeight($line)
+    {
+        if(!isset($this->line_heights[$line])) {
+            return 20;
+        }
+        return $this->line_heights[$line];
+    }
+
+    private function calcColumnWidth($vowel, $text)
+    {
+        $width = $this->getColumnWidth($vowel);
         $int = \strlen($text) + 3;
-
-        if ($this->colums_widths[$col] < $int) {
-            $this->colums_widths[$col] = $int;
+        if ($width < $int) {
+            $this->colums_widths[$vowel] = $int;
         }
+    }
+
+    private function getColumnWidth($vowel)
+    {
+        if(!isset($this->colums_widths[$vowel])) {
+            $this->colums_widths[$vowel] = 5;
+        }
+        return $this->colums_widths[$vowel];
     }
 
     /**

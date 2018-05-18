@@ -24,6 +24,8 @@ class WriteToXlsTest extends TestCase
         $styler = Styler::createFromReader($reader);
 
         $styler->setStyles('A1', [
+            'border-top-style'   => 'thick',
+            'border-top-color'   => '#0000ff',
             'background-color'   => '#ff0000',
             'color'              => '#fffff0', // color deve ser atualizado
             'font-face'          => 'Arial',
@@ -39,6 +41,5 @@ class WriteToXlsTest extends TestCase
 
         $temp_file = tempnam(sys_get_temp_dir(), 'AAA') . ".xls";
         $writer->save($temp_file);
-
     }
 }
