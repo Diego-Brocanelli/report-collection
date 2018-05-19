@@ -41,5 +41,7 @@ class WriteToXlsTest extends TestCase
 
         $temp_file = tempnam(sys_get_temp_dir(), 'AAA') . ".xls";
         $writer->save($temp_file);
+
+        $this->assertTrue(true);
     }
 }
