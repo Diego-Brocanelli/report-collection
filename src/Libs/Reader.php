@@ -244,6 +244,15 @@ class Reader
         $this->input_format_date = $format;
     }
 
+    /**
+     * Devolve o buffer usado para o parseamento dos dados.
+     * @return mixed
+     */
+    public function getBuffer()
+    {
+        return $this->buffer;
+    }
+
     private function extractDataFromSpreadsheet(Spreadsheet $sheet, $extension)
     {
         $headers   = [];
