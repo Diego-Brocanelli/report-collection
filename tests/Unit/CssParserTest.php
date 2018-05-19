@@ -119,53 +119,178 @@ class CssParserTest extends TestCase
         $this->assertEquals('FF000000', $parsed['border-top-color']->getARGB());
     }
 
-/*    public function testAlignments()
+    public function testColor()
     {
-        $styles = [
-            'border-top-style'   => 'thick',
-            'border-right-style'   => 'dash-dot',
-            'border-bottom-style'   => 'dashed',
-            'border-left-style'   => 'dotted',
+        $parsed = CssParser::parse(['color' => '#ffffff']);
+        $this->assertArrayHasKey('color', $parsed);
 
-            'border-top-color'   => '#0000ff',
-            'border-right-color'   => '#0000ff',
-            'border-bottom-color'   => '#0000ff',
-            'border-left-color'   => '#0000ff',
+        $parsed = CssParser::parse(['color' => '#ff00ff']);
+        $this->assertInstanceOf(Style\Color::class, $parsed['color']);
+        $this->assertEquals('FF00FF', $parsed['color']->getRGB());
+        $this->assertEquals('FFFF00FF', $parsed['color']->getARGB());
+    }
 
-            'background-color'   => '#ff0000',
-            'background-fill'    => 'dark-down',
+    public function testBackgroundColor()
+    {
+        $parsed = CssParser::parse(['background-color' => '#ffffff']);
+        $this->assertArrayHasKey('background-color', $parsed);
 
-            'color'              => '#fffff0',
-            'font-face'          => 'Arial',
-            'font-size'          => '11',
-            'font-weight'        => 'bold',
-            'font-style'         => 'italic',
-            'line-height'        => '25',
-            'text-align'         => 'center',
-            'vertical-align'     => 'middle',
-        ];
+        $parsed = CssParser::parse(['background-color' => '#ff00ff']);
+        $this->assertInstanceOf(Style\Color::class, $parsed['background-color']);
+        $this->assertEquals('FF00FF', $parsed['background-color']->getRGB());
+        $this->assertEquals('FFFF00FF', $parsed['background-color']->getARGB());
+    }
 
-        $parsed = CssParser::parse($styles);
+    public function testBackgroundFill()
+    {
+        $parsed = CssParser::parse(['background-fill' => 'solid']);
+        $this->assertArrayHasKey('background-fill', $parsed);
 
-        $this->assertEquals($styles['border-top-style'], Style\Border::BORDER_THICK);
-        $this->assertEquals($styles['border-right-style'], Style\Border::BORDER_THICK);
-        $this->assertEquals($styles['border-bottom-style'], Style\Border::BORDER_THICK);
-        $this->assertEquals($styles['border-left-style'], Style\Border::BORDER_THICK);
+        $parsed = CssParser::parse(['background-fill' => 'none']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_NONE);
 
-        $this->assertInstanceOf(Style\Color::class, $styles['background-top-color']);
-        $this->assertInstanceOf(Style\Color::class, $styles['background-right-color']);
-        $this->assertInstanceOf(Style\Color::class, $styles['background-bottom-color']);
-        $this->assertInstanceOf(Style\Color::class, $styles['background-left-color']);
+        $parsed = CssParser::parse(['background-fill' => 'solid']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_SOLID);
 
-        $this->assertInstanceOf(Style\Color::class, $styles['background-color']);
-        $this->assertEquals($styles['background-fill'], Style\Fill::FILL_PATTERN_DARKDOWN);
-        $this->assertInstanceOf(Style\Color::class, $styles['color']);
-        $this->assertEquals($styles['font-face'], 'Arial');
-        $this->assertEquals($styles['font-size'], '11');
-        $this->assertEquals($styles['font-weight'], 'bold');
-        $this->assertEquals($styles['font-style'], 'italic');
-        $this->assertEquals($styles['line-height'], '25');
-        $this->assertEquals($styles['text-align'], Style\Alignment::HORIZONTAL_CENTER);
-        $this->assertEquals($styles['vertical-align'], Style\Alignment::VERTICAL_CENTER);
-    }*/
+        $parsed = CssParser::parse(['background-fill' => 'gradient-linear']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_GRADIENT_LINEAR);
+
+        $parsed = CssParser::parse(['background-fill' => 'gradient-path']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_GRADIENT_PATH);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-down']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKDOWN);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-gray']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKGRAY);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-grid']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKGRID);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-horizontal']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKHORIZONTAL);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-trellis']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKTRELLIS);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-up']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKUP);
+
+        $parsed = CssParser::parse(['background-fill' => 'dark-vertical']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_DARKVERTICAL);
+
+        $parsed = CssParser::parse(['background-fill' => 'gray-0625']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_GRAY0625);
+
+        $parsed = CssParser::parse(['background-fill' => 'gray-125']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_GRAY125);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-down']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTDOWN);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-gray']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTGRAY);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-grid']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTGRID);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-horizontal']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTHORIZONTAL);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-trellis']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTTRELLIS);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-up']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTUP);
+
+        $parsed = CssParser::parse(['background-fill' => 'light-vertical']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_LIGHTVERTICAL);
+
+        $parsed = CssParser::parse(['background-fill' => 'medium-gray']);
+        $this->assertEquals($parsed['background-fill'], Style\Fill::FILL_PATTERN_MEDIUMGRAY);
+
+        // TODO:
+        // testar quando o background for setado sem fill
+    }
+
+    public function testTextAlign()
+    {
+        $parsed = CssParser::parse(['text-align' => 'center']);
+        $this->assertEquals(Style\Alignment::HORIZONTAL_CENTER, $parsed['text-align']);
+
+        $parsed = CssParser::parse(['text-align' => 'left']);
+        $this->assertEquals(Style\Alignment::HORIZONTAL_LEFT, $parsed['text-align']);
+
+        $parsed = CssParser::parse(['text-align' => 'right']);
+        $this->assertEquals(Style\Alignment::HORIZONTAL_RIGHT, $parsed['text-align']);
+
+        $parsed = CssParser::parse(['text-align' => 'justify']);
+        $this->assertEquals(Style\Alignment::HORIZONTAL_JUSTIFY, $parsed['text-align']);
+    }
+
+    public function testVerticalAlign()
+    {
+        $parsed = CssParser::parse(['vertical-align' => 'top']);
+        $this->assertEquals(Style\Alignment::VERTICAL_TOP, $parsed['vertical-align']);
+
+        $parsed = CssParser::parse(['vertical-align' => 'bottom']);
+        $this->assertEquals(Style\Alignment::VERTICAL_BOTTOM, $parsed['vertical-align']);
+
+        $parsed = CssParser::parse(['vertical-align' => 'middle']);
+        $this->assertEquals(Style\Alignment::VERTICAL_CENTER, $parsed['vertical-align']);
+    }
+
+    public function testLineHeight()
+    {
+        $parsed = CssParser::parse(['line-height' => 25]);
+        $this->assertEquals(25, $parsed['line-height']);
+
+        $parsed = CssParser::parse(['line-height' => '30']);
+        $this->assertEquals(30, $parsed['line-height']);
+
+        $parsed = CssParser::parse(['line-height' => '35px']);
+        $this->assertEquals(35, $parsed['line-height']);
+
+        $parsed = CssParser::parse(['line-height' => '40pt']);
+        $this->assertEquals(40, $parsed['line-height']);
+    }
+
+    public function testFontSize()
+    {
+        $parsed = CssParser::parse(['font-size' => 25]);
+        $this->assertEquals(25, $parsed['font-size']);
+
+        $parsed = CssParser::parse(['font-size' => '30']);
+        $this->assertEquals(30, $parsed['font-size']);
+
+        $parsed = CssParser::parse(['font-size' => '35px']);
+        $this->assertEquals(35, $parsed['font-size']);
+
+        $parsed = CssParser::parse(['font-size' => '40pt']);
+        $this->assertEquals(40, $parsed['font-size']);
+    }
+
+    public function testFontFace()
+    {
+        $parsed = CssParser::parse(['font-face' => 'Arial']);
+        $this->assertEquals('Arial', $parsed['font-face']);
+    }
+
+    public function testFontWeight()
+    {
+        $parsed = CssParser::parse(['font-weight' => 'normal']);
+        $this->assertEquals(false, $parsed['font-weight']);
+
+        $parsed = CssParser::parse(['font-weight' => 'bold']);
+        $this->assertEquals(true, $parsed['font-weight']);
+    }
+
+    public function testFontStyle()
+    {
+        $parsed = CssParser::parse(['font-style' => 'normal']);
+        $this->assertEquals(false, $parsed['font-style']);
+
+        $parsed = CssParser::parse(['font-style' => 'italic']);
+        $this->assertEquals(true, $parsed['font-style']);
+    }
 }

@@ -203,8 +203,8 @@ class CssParser
         $map = [
             'none'             => Style\Fill::FILL_NONE,
             'solid'            => Style\Fill::FILL_SOLID,
-            'linear'           => Style\Fill::FILL_GRADIENT_LINEAR,
-            'path'             => Style\Fill::FILL_GRADIENT_PATH,
+            'gradient-linear'  => Style\Fill::FILL_GRADIENT_LINEAR,
+            'gradient-path'    => Style\Fill::FILL_GRADIENT_PATH,
             'dark-down'        => Style\Fill::FILL_PATTERN_DARKDOWN,
             'dark-gray'        => Style\Fill::FILL_PATTERN_DARKGRAY,
             'dark-grid'        => Style\Fill::FILL_PATTERN_DARKGRID,
