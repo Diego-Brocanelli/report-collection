@@ -3,7 +3,6 @@
 namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use ReportCollection\Libs\DateParser;
 use ReportCollection\Tests\Libs;

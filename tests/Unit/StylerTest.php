@@ -3,7 +3,6 @@
 namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReportCollection\Libs\Reader;
 use ReportCollection\Libs\Styler;
 use ReportCollection\Tests\Libs;

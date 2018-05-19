@@ -3,7 +3,6 @@
 namespace ReportCollection\Tests\Unit;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReportCollection\Libs\Reader;
 use ReportCollection\Tests\Libs;
 
@@ -62,6 +61,6 @@ class ReaderToXmlTest extends TestCase
   </Row>
 </Table>
 ", $handle->toXml());
-        
+
     }
 }
