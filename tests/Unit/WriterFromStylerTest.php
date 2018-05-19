@@ -46,9 +46,10 @@ class WriterFromStylerTest extends TestCase
     public function testWriteDownload()
     {
         $reader = Reader::createFromArray($this->provider);
-        $writer = Writer::createFromReader($reader);
+        $styler = Styler::createFromReader($reader);
+        $writer = Writer::createFromStyler($styler);
 
-        $temp_file = tempnam(sys_get_temp_dir(), 'WriterFromReaderSaveTest') . ".xls";
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterFromStylerSaveTest') . ".xls";
 
         // Pega o conteúdo do download
         ob_start();
