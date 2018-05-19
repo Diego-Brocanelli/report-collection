@@ -1,8 +1,8 @@
-# Laravel Report Collection
+# Report Collection
 
 *By [Ricardo Pereira Dias &copy;](https://github.com/rpdesignerfly)*
 
-Laravel Report Collection é um pacote que permite a manipulação de quaisquer listas de dados a fim de serem exportadas em arquivos de relatório.
+Report Collection é uma biblioteca que permite a manipulação de uma gama de tipos de listas de dados a fim de serem exportadas em arquivos de relatório ou simplesmente usadas em qualquer projeto PHP.
 
 > **Atenção**:
 > Esta biblioteca está em fase de desenvolvimento. Use-a por sua conta e risco!
@@ -23,7 +23,7 @@ Sinta-se à vontade para conferir os [releases](https://github.com/rpdesignerfly
   2. [Instalação](docs/02-Installation.md)
   3. [Como Usar](docs/03-Usage.md)
   4. [Extras](docs/04-Extras.md)
-  
+
 
 ## Creditos
 
