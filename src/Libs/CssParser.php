@@ -29,6 +29,12 @@ class CssParser
         'border-left-style'
     ];
 
+    protected function __construct()
+    {
+        // Construtor inacessível,
+        // para forçar o uso de CssParser::parse()
+    }
+
     /**
      * Interpreta os estilos e devolve-os devidamente
      * corrigidos para a planilha
@@ -85,12 +91,21 @@ class CssParser
 
     protected function parseHex($hex)
     {
+        $is_hex = preg_match('/^#[0-9a-fA-F]*$/', $hex);
+        if ($is_hex === 0 || $is_hex === false) {
+            // Hex inválido é tratado como preto
+            $hex = '#000000';
+        }
+
         $hex = trim(strtoupper($hex), '#');
         if (strlen($hex) == 8) {
+            // FFCCCCCC
             $fixed = $hex;
         } elseif (strlen($hex) == 6) {
+            // CCCCCC
             $fixed = 'FF' . $hex;
         } elseif(strlen($hex) >= 3) {
+            // CC
             $fixed = 'FF' . $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
         }
         return $fixed;
