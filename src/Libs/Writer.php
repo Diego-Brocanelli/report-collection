@@ -108,11 +108,13 @@ class Writer
         $this->spreadsheet = new Spreadsheet();
         $this->spreadsheet->getProperties()
             ->setCreator("Report Collection")
-            ->setLastModifiedBy("Rocardo Pereira <>")
-            ->setTitle("Office 2007 XLSX Test Document")
+            ->setLastModifiedBy("Ricardo Pereira <https://rpdesignerfly.github.io/>")
+            ->setTitle("Documento do Report Collection")
             ->setSubject("Office 2007 XLSX Test Document")
             ->setDescription(
-                "Test document for Office 2007 XLSX, generated using PHP classes."
+                "Este documento foi gerado usando a biblioteca Report Collection,
+                deselvolvida por Ricardo Pereira Dias, que pode ser encontrada
+                em https://github.com/rpdesignerfly/report-collection"
             )
             ->setKeywords("office 2007 openxml php")
             ->setCategory("Test result file");
@@ -403,6 +405,11 @@ class Writer
 
     private function httpHeaders($basename, $extension)
     {
+        if (php_sapi_name() == "cli") {
+            // Quando em testes de unidade, não usa-se headers
+            return false;
+        }
+
         // Cabeçalhos para MimeType
         switch(strtolower($extension))
         {
