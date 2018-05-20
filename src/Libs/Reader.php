@@ -33,6 +33,7 @@ class Reader
         'xml'      => 'Xml'
     ];
 
+    /** @var string */
     protected $input_format_date = null;
 
     /**
@@ -239,6 +240,15 @@ class Reader
         return self::createFromFile($filename, 'xml');
     }
 
+    /**
+     * Especifica o formato dos valores que deverão ser tratados como data.
+     * O formato deve ser uma string com o código da formatação.
+     * Ex: O formato d/m/Y resultará em 31/12/9999.
+     * Caso um formato não seja especificado, a biblioteca tentará
+     * detectar a data automaticamente. 
+     * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
+     * @param string $format
+     */
     public function setInputDateFormat($format)
     {
         $this->input_format_date = $format;
