@@ -9,7 +9,7 @@ use ReportCollection\Libs\Writer;
 use ReportCollection\Tests\Libs;
 use PhpOffice\PhpSpreadsheet\Style;
 
-class WriteToXlsTest extends TestCase
+class WriteToXlsxTest extends TestCase
 {
     private $provider = array(
         ["Company", "Contact", "Date"],
@@ -44,7 +44,7 @@ class WriteToXlsTest extends TestCase
         ]);
         $writer = Writer::createFromStyler($styler);
 
-        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsTest') . ".xls";
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsTest') . ".xlsx";
         $writer->save($temp_file);
         $this->assertFileExists($temp_file);
 
