@@ -253,7 +253,7 @@ class Reader
         return $this->buffer;
     }
 
-    private function extractDataFromSpreadsheet(Spreadsheet $sheet, $extension)
+    private function parseDataFromSpreadsheet(Spreadsheet $sheet, $extension)
     {
         $headers   = [];
         $extracted = [];
@@ -285,16 +285,21 @@ class Reader
 
                 } elseif(empty($value) == false && is_string($value)) {
 
-                    // Verifica se é uma data alternativa
-                    // 10.01.80, 10.01.1980, 10-01-80, 10-01-1980, 1980-01-10, 10/01/80, 10/01/80
                     $value = trim($value);
                     $timezone = date_default_timezone_get();
+
+                    // 1ª Verificação:
+                    // O formato pode ser forçado $this->input_format_date != null
+                    // ou automático $this->input_format_date == null
+                    // A verificação automática busca pelas datas alternativas:
+                    // 10.01.80, 10.01.1980, 10-01-80, 10-01-1980, 1980-01-10, 10/01/80, 10/01/80
                     $date = DateParser::parse($value, $this->input_format_date, $timezone);
-                    // Com formato forçado $this->input_format_date != null
                     if ($date !== false) {
                         $value = $date->getDateObject();
                     } elseif($this->input_format_date !== null) {
-                        // Com formato automatico
+                        // 2ª Verificação:
+                        // O formato da 1ª tentativa foi forçado
+                        // nesta, tenta como automático $this->input_format_date == null
                         $date = DateParser::parse($value, null, $timezone);
                         if ($date !== false) {
                             $value = $date->getDateObject();
@@ -344,6 +349,42 @@ class Reader
         return array_merge([$headers], $extracted);
     }
 
+    private function parseDataFromArray(array $data)
+    {
+        foreach($data as $row => $cols ) {
+
+            foreach ($cols as $col => $value) {
+
+                if(empty($value) == false && is_string($value)) {
+
+                    $value = trim($value);
+                    $timezone = date_default_timezone_get();
+
+                    // 1ª Verificação:
+                    // O formato pode ser forçado $this->input_format_date != null
+                    // ou automático $this->input_format_date == null
+                    // A verificação automática busca pelas datas alternativas:
+                    // 10.01.80, 10.01.1980, 10-01-80, 10-01-1980, 1980-01-10, 10/01/80, 10/01/80
+                    $date = DateParser::parse($value, $this->input_format_date, $timezone);
+                    if ($date !== false) {
+                        $value = $date->getDateObject();
+                    } elseif($this->input_format_date !== null) {
+                        // 2ª Verificação:
+                        // O formato da 1ª tentativa foi forçado
+                        // nesta, tenta como automático $this->input_format_date == null
+                        $date = DateParser::parse($value, null, $timezone);
+                        if ($date !== false) {
+                            $value = $date->getDateObject();
+                        }
+                    }
+
+                    $data[$row][$col] = $value;
+                }
+            }
+        }
+        return $data;
+    }
+
     /**
      * Devolve os dados em forma de array.
      *
@@ -356,10 +397,10 @@ class Reader
         }
 
         if ($this->type == 'spreadsheet') {
-            $this->data = $this->extractDataFromSpreadsheet($this->buffer, $this->extension);
+            $this->data = $this->parseDataFromSpreadsheet($this->buffer, $this->extension);
 
         } else {
-            $this->data = $this->buffer;
+            $this->data = $this->parseDataFromArray($this->buffer);
         }
 
         return $this->data;
