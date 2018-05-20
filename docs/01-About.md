@@ -1,4 +1,4 @@
-# Laravel Report Collection
+# Report Collection
 
 Desculpe... ainda estou fazendo esta parte!
 
@@ -8,4 +8,3 @@ Desculpe... ainda estou fazendo esta parte!
   2. [Instalação](02-Installation.md)
   3. [Como Usar](03-Usage.md)
   4. [Extras](04-Extras.md)
-  

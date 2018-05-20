@@ -41,9 +41,9 @@ $ git clone https://github.com/rpdesignerfly/report-collection.git .
 
 ### 4. Configurando o Laravel para usar o pacote
 
-No arquivo "composer.json", abaixo da seção 'config', adicione 'minimum-stability' como 'dev' e o repositório apontando para o diretório './packages/plexi/report-collection/'. 
+No arquivo "composer.json", abaixo da seção 'config', adicione 'minimum-stability' como 'dev' e o repositório apontando para o diretório './packages/plexi/report-collection/'.
 
-> **Atenção:** 
+> **Atenção:**
 > Não esqueça da barra (/) no final:
 
 ```json
@@ -74,7 +74,7 @@ $ composer require plexi/report-collection
 ```
 
 
-Em seguida, basta executar a instalação ou atualização do composer para que o pacote seja 
+Em seguida, basta executar a instalação ou atualização do composer para que o pacote seja
 adicionado ao autoloader do composer:
 
 ```bash
