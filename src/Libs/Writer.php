@@ -36,6 +36,9 @@ class Writer
         'xml'      => 'Xml'
     ];
 
+    /** @var string */ 
+    protected $output_format_date = 'd/m/Y';
+
     /** @var array */
     private $line_heights = [];
 
@@ -67,6 +70,18 @@ class Writer
         $instance->reader = $styler->getReader();
 
         return $instance;
+    }
+
+    /**
+     * Especifica o formato das datas no arquivo resultante da gravação.
+     * O formato deve ser uma string com o código da formatação.
+     * Ex: O formato d/m/Y resultará em 31/12/9999
+     * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
+     * @param string $format
+     */
+    public function setOutputDateFormat($format)
+    {
+        $this->output_format_date = $format;
     }
 
     /**
@@ -129,7 +144,15 @@ class Writer
             foreach ($cols as $col => $cell) {
 
                 $column = $col+1;
-                $text   = $cell['value'];
+                $contents   = $cell['value'];
+
+                if ($contents instanceof \DateTime) {
+                    $text = $contents->format($this->output_format_date);
+                    // TODO: Formatar a célula como data
+                } elseif (is_string($contents) || is_numeric($contents)) {
+                    $text = $contents;
+                }
+
                 $styles = CssParser::parse($cell['styles']);
 
                 $vowel = $this->getColumnVowel($column);
