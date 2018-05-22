@@ -18,6 +18,36 @@ class WriteToXlsTest extends TestCase
         ["Ernst Handel", "Roland Mendel", "26/06/1985"],
     );
 
+    public function testWritedInfo()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $writer = Writer::createFromReader($reader);
+        $writer->setInfoCreator('aaa');
+        $writer->setInfoLastModifiedBy('bbb');
+        $writer->setInfoTitle('ccc');
+        $writer->setInfoSubject('ddd');
+        $writer->setInfoDescription('eee');
+        $writer->setInfoKeywords('fff');
+        $writer->setInfoCategory('ggg');
+
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsInfoTest') . ".xls";
+        $writer->save($temp_file);
+        $this->assertFileExists($temp_file);
+
+        // O arquivo gravado está legível
+        $reader = Reader::createFromFile($temp_file);
+        $this->assertInstanceOf(Reader::class, $reader);
+
+        $props = $reader->getBuffer()->getProperties();
+        $this->assertEquals('aaa', $props->getCreator());
+        $this->assertEquals('bbb', $props->getLastModifiedBy());
+        $this->assertEquals('ccc', $props->getTitle());
+        $this->assertEquals('ddd', $props->getSubject());
+        $this->assertEquals('eee', $props->getDescription());
+        $this->assertEquals('fff', $props->getKeywords());
+        $this->assertEquals('ggg', $props->getCategory());
+    }
+
     public function testWritedStyles()
     {
         $reader = Reader::createFromArray($this->provider);
