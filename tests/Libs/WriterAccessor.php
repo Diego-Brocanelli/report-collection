@@ -26,14 +26,4 @@ class WriterAccessor extends Writer
     {
         return $this->getColumnWidth($vowel);
     }
-
-    // public function accessApplyStyles($row, $col, $styles)
-    // {
-    //     return $this->applyStyles($row, $col, $styles);
-    // }
-    //
-    // public function accessApplyBorderStyle($row, $col, $param, $value)
-    // {
-    //     return $this->applyBorderStyle($row, $col, $param, $value);
-    // }
 }
