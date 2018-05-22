@@ -44,7 +44,7 @@ class Writer
     private $line_heights = [];
 
     /** @var array */
-    private $colums_widths = [];
+    private $columns_widths = [];
 
     /** @var array */
     private $info = [
@@ -85,18 +85,6 @@ class Writer
     }
 
     /**
-     * Especifica o formato das datas no arquivo resultante da gravação.
-     * O formato deve ser uma string com o código da formatação.
-     * Ex: O formato d/m/Y resultará em 31/12/9999
-     * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
-     * @param string $format
-     */
-    public function setOutputDateFormat($format)
-    {
-        $this->output_format_date = $format;
-    }
-
-    /**
      *  Devolve a instancia do Reader.
      * @return ReportCollection\Libs\Reader
      */
@@ -130,64 +118,109 @@ class Writer
     /**
      * Seta a informação de criador do documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoCreator($string)
     {
         $this->info['creator'] = $string;
+        return $this;
     }
 
     /**
      * Seta a última pessoa a alterar o documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoLastModifiedBy($string)
     {
         $this->info['last_modified'] = $string;
+        return $this;
     }
 
     /**
      * Seta o título do documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoTitle($string)
     {
         $this->info['title'] = $string;
+        return $this;
     }
 
     /**
      * Seta o assunto do documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoSubject($string)
     {
         $this->info['subject'] = $string;
+        return $this;
     }
 
     /**
      * Seta a descrição do documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoDescription($string)
     {
         $this->info['description'] = $string;
+        return $this;
     }
 
     /**
      * Seta palavras chave para o documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoKeywords($string)
     {
         $this->info['keywords'] = $string;
+        return $this;
     }
 
     /**
      * Seta a categoria do documento.
      * @param string $string
+     * @return ReportCollection\Libs\Writer
      */
     public function setInfoCategory($string)
     {
         $this->info['category'] = $string;
+        return $this;
+    }
+
+    /**
+     * Especifica o formato das datas no arquivo resultante da gravação.
+     * O formato deve ser uma string com o código da formatação.
+     * Ex: O formato d/m/Y resultará em 31/12/9999
+     * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
+     * @param string $format
+     * @return ReportCollection\Libs\Writer
+     */
+    public function setOutputDateFormat($format)
+    {
+        $this->output_format_date = $format;
+        return $this;
+    }
+
+    /**
+     * Define a largura padrão de uma coluna.
+     * O valor de $col pode ser especificado como vogal (no estilo excel)
+     * ou como índice numérico (começando com 0)
+     * @param mixed $col
+     * @param int $value
+     * @return ReportCollection\Libs\Writer
+     */
+    public function setColumnWidth($col, $value)
+    {
+        if (is_numeric($col)) {
+            $col = $this->getColumnVowel($col);
+        }
+        $this->columns_widths[$col] = (int) $value;
+        return $this;
     }
 
     private function getSpreadsheet()
@@ -419,16 +452,16 @@ class Writer
         $width = $this->getColumnWidth($vowel);
         $int = \strlen($text) + 3;
         if ($width < $int) {
-            $this->colums_widths[$vowel] = $int;
+            $this->columns_widths[$vowel] = $int;
         }
     }
 
     private function getColumnWidth($vowel)
     {
-        if(!isset($this->colums_widths[$vowel])) {
-            $this->colums_widths[$vowel] = 5;
+        if(!isset($this->columns_widths[$vowel])) {
+            $this->columns_widths[$vowel] = 5;
         }
-        return $this->colums_widths[$vowel];
+        return $this->columns_widths[$vowel];
     }
 
     /**
