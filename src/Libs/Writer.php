@@ -33,10 +33,11 @@ class Writer
         'pdf'      => 'Pdf',
         'xls'      => 'Xls',
         'xlsx'     => 'Xlsx',
-        'xml'      => 'Xml'
+        // 'xml'      => 'Xml'
+        // 'blade'      => 'Blade'
     ];
 
-    /** @var string */ 
+    /** @var string */
     protected $output_format_date = 'd/m/Y';
 
     /** @var array */
@@ -44,6 +45,17 @@ class Writer
 
     /** @var array */
     private $colums_widths = [];
+
+    /** @var array */
+    private $info = [
+        'creator'       => 'Report Collection',
+        'last_modified' => 'Ricardo Pereira <https://rpdesignerfly.github.io>',
+        'title'         => 'Documento de Relatório',
+        'subject'       => 'Relatório de feito com Report Collection',
+        'description'   => 'Este documento foi gerado usando a biblioteca Report Collection, deselvolvida por Ricardo Pereira Dias, que pode ser encontrada em https://github.com/rpdesignerfly/report-collection',
+        'keywords'      => 'office 2007 openxml php',
+        'category'      => 'Relatórios',
+    ];
 
     /**
      * Importa os dados a partir do Reader
@@ -115,6 +127,41 @@ class Writer
         $this->getStyler()->getBuffer();
     }
 
+    public function setInfoCreator($string)
+    {
+        $this->info['creator'] = $string;
+    }
+
+    public function setInfoLastModifiedBy($string)
+    {
+        $this->info['last_modified'] = $string;
+    }
+
+    public function setInfoTitle($string)
+    {
+        $this->info['title'] = $string;
+    }
+
+    public function setInfoSubject($string)
+    {
+        $this->info['subject'] = $string;
+    }
+
+    public function setInfoDescription($string)
+    {
+        $this->info['description'] = $string;
+    }
+
+    public function setInfoKeywords($string)
+    {
+        $this->info['keywords'] = $string;
+    }
+
+    public function setInfoCategory($string)
+    {
+        $this->info['category'] = $string;
+    }
+
     private function getSpreadsheet()
     {
         if ($this->spreadsheet != null) {
@@ -122,17 +169,13 @@ class Writer
         }
         $this->spreadsheet = new Spreadsheet();
         $this->spreadsheet->getProperties()
-            ->setCreator("Report Collection")
-            ->setLastModifiedBy("Ricardo Pereira <https://rpdesignerfly.github.io/>")
-            ->setTitle("Documento do Report Collection")
-            ->setSubject("Office 2007 XLSX Test Document")
-            ->setDescription(
-                "Este documento foi gerado usando a biblioteca Report Collection,
-                deselvolvida por Ricardo Pereira Dias, que pode ser encontrada
-                em https://github.com/rpdesignerfly/report-collection"
-            )
-            ->setKeywords("office 2007 openxml php")
-            ->setCategory("Test result file");
+            ->setCreator($this->info['creator'])
+            ->setLastModifiedBy($this->info['last_modified'])
+            ->setTitle($this->info['title'])
+            ->setSubject($this->info['subject'])
+            ->setDescription($this->info['description'])
+            ->setKeywords($this->info['keywords'])
+            ->setCategory($this->info['category']);
 
         $this->spreadsheet->setActiveSheetIndex(0);
 
@@ -402,6 +445,10 @@ class Writer
             if ($extension == $slug && $slug == 'pdf') {
                 IOFactory::registerWriter('CustomPDF', PDFWriter::class);
                 $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomPDF');
+            } elseif ($extension == $slug && in_array($slug, ['html', 'htm']) == true) {
+                IOFactory::registerWriter('CustomHtml', HtmlWriter::class);
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomHtml');
+
             } elseif ($extension == $slug) {
                 $factory = IOFactory::createWriter($this->getSpreadsheet(), $writer);
             }
