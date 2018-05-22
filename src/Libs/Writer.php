@@ -127,36 +127,64 @@ class Writer
         $this->getStyler()->getBuffer();
     }
 
+    /**
+     * Seta a informação de criador do documento.
+     * @param string $string
+     */
     public function setInfoCreator($string)
     {
         $this->info['creator'] = $string;
     }
 
+    /**
+     * Seta a última pessoa a alterar o documento.
+     * @param string $string
+     */
     public function setInfoLastModifiedBy($string)
     {
         $this->info['last_modified'] = $string;
     }
 
+    /**
+     * Seta o título do documento.
+     * @param string $string
+     */
     public function setInfoTitle($string)
     {
         $this->info['title'] = $string;
     }
 
+    /**
+     * Seta o assunto do documento.
+     * @param string $string
+     */
     public function setInfoSubject($string)
     {
         $this->info['subject'] = $string;
     }
 
+    /**
+     * Seta a descrição do documento.
+     * @param string $string
+     */
     public function setInfoDescription($string)
     {
         $this->info['description'] = $string;
     }
 
+    /**
+     * Seta palavras chave para o documento.
+     * @param string $string
+     */
     public function setInfoKeywords($string)
     {
         $this->info['keywords'] = $string;
     }
 
+    /**
+     * Seta a categoria do documento.
+     * @param string $string
+     */
     public function setInfoCategory($string)
     {
         $this->info['category'] = $string;
