@@ -48,6 +48,28 @@ class WriteToXlsTest extends TestCase
         $this->assertEquals('ggg', $props->getCategory());
     }
 
+    public function testWritedColumnWidths()
+    {
+        $reader = Reader::createFromArray($this->provider);
+        $writer = Writer::createFromReader($reader);
+        $writer->setColumnWidth('A', 50);
+        $writer->setColumnWidth('B', 40);
+        $writer->setColumnWidth('C', 30);
+
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsColumnsTest_') . ".xls";
+        $writer->save($temp_file);
+        $this->assertFileExists($temp_file);
+
+        // O arquivo gravado está legível
+        $reader = Reader::createFromFile($temp_file);
+        $this->assertInstanceOf(Reader::class, $reader);
+
+        $sheet = $reader->getBuffer()->getActiveSheet();
+        $this->assertEquals(50, $sheet->getColumnDimension('A')->getWidth());
+        $this->assertEquals(40, $sheet->getColumnDimension('B')->getWidth());
+        $this->assertEquals(30, $sheet->getColumnDimension('C')->getWidth());
+    }
+
     public function testWritedStyles()
     {
         $reader = Reader::createFromArray($this->provider);
@@ -74,7 +96,7 @@ class WriteToXlsTest extends TestCase
         ]);
         $writer = Writer::createFromStyler($styler);
 
-        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsTest') . ".xls";
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToXlsStylesTest_') . ".xls";
         $writer->save($temp_file);
         $this->assertFileExists($temp_file);
 

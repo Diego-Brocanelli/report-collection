@@ -12,16 +12,21 @@ use ReportCollection\Libs\Writer;
  */
 class WriterAccessor extends Writer
 {
-    // public function accessResolveRange($range)
-    // {
-    //     return $this->resolveRange($range);
-    // }
-    //
-    // public function accessGetColumnNumber($vowel)
-    // {
-    //     return $this->getColumnNumber($vowel);
-    // }
-    //
+    public function accessGetColumnVowel($number)
+    {
+         return $this->getColumnVowel($number);
+    }
+
+    public function accessCalcColumnWidth($vowel, $text)
+    {
+         return $this->calcColumnWidth($vowel, $text);
+    }
+
+    public function accessGetColumnWidth($vowel)
+    {
+        return $this->getColumnWidth($vowel);
+    }
+
     // public function accessApplyStyles($row, $col, $styles)
     // {
     //     return $this->applyStyles($row, $col, $styles);

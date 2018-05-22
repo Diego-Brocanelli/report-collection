@@ -51,6 +51,7 @@ class StylerTest extends TestCase
         $styler = Libs\StylerAccessor::createFromReader($reader);
 
         // O cálculo da numeração resultante é baseana no modo excel, começando com 1
+        $this->assertEquals($styler->accessGetColumnNumber('A'), 1);
         $this->assertEquals($styler->accessGetColumnNumber('AZ'), 52);
         $this->assertEquals($styler->accessGetColumnNumber('C'), 3);
         $this->assertEquals($styler->accessGetColumnNumber('ZZ'), 702);

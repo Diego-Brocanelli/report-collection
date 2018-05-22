@@ -64,7 +64,8 @@ class Writer
      */
     public static function createFromReader(Reader $reader)
     {
-        $instance = new self;
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
         $instance->reader = $reader;
 
         return $instance;
@@ -77,7 +78,8 @@ class Writer
      */
     public static function createFromStyler(Styler $styler)
     {
-        $instance = new self;
+        $classname = \get_called_class(); // para permitir abstração
+        $instance = new $classname;
         $instance->styler = $styler;
         $instance->reader = $styler->getReader();
 
@@ -212,12 +214,13 @@ class Writer
      * ou como índice numérico (começando com 0)
      * @param mixed $col
      * @param int $value
+     * @throws \InvalidArgumentException
      * @return ReportCollection\Libs\Writer
      */
     public function setColumnWidth($col, $value)
     {
         if (is_numeric($col)) {
-            $col = $this->getColumnVowel($col);
+            throw new \InvalidArgumentException("Unsupported column vowel");
         }
         $this->columns_widths[$col] = (int) $value;
         return $this;
@@ -347,7 +350,7 @@ class Writer
 
         // Largura das colunas
         foreach ($buffer[0] as $col => $nulled) {
-            $vowel = $this->getColumnVowel($col);
+            $vowel = $this->getColumnVowel($col+1);
             $width = $this->getColumnWidth($vowel);
             $this->spreadsheet->getActiveSheet()
                 ->getColumnDimension($vowel)->setWidth($width);
@@ -431,7 +434,7 @@ class Writer
         //             ->getColumnDimension($vowel)->setWidth($col_width[$vowel]);
     }
 
-    private function calcLineHeight($line, $int)
+    protected function calcLineHeight($line, $int)
     {
         $height = $this->getLineHeight($line);
         if ($height < $int) {
@@ -439,7 +442,7 @@ class Writer
         }
     }
 
-    private function getLineHeight($line)
+    protected function getLineHeight($line)
     {
         if(!isset($this->line_heights[$line])) {
             return 20;
@@ -447,17 +450,21 @@ class Writer
         return $this->line_heights[$line];
     }
 
-    private function calcColumnWidth($vowel, $text)
+    protected function calcColumnWidth($vowel, $text)
     {
         $width = $this->getColumnWidth($vowel);
-        $int = \strlen($text) + 3;
+        $int = \strlen($text) + 5;
         if ($width < $int) {
             $this->columns_widths[$vowel] = $int;
         }
     }
 
-    private function getColumnWidth($vowel)
+    protected function getColumnWidth($vowel)
     {
+        if (is_numeric($vowel)) {
+            throw new \InvalidArgumentException("Only vowels are accepted");
+        }
+
         if(!isset($this->columns_widths[$vowel])) {
             $this->columns_widths[$vowel] = 5;
         }
@@ -466,14 +473,20 @@ class Writer
 
     /**
      * Converte uma coluna numérica para as vogais correspondentes.
+     * O indice numérico deve começar com 1.
      *
      * @param int $number
+     * @throws \InvalidArgumentException
      * @return string
      */
     protected function getColumnVowel($number)
     {
         if (!is_int($number) && !is_numeric($number)) {
-            return $number;
+            throw new \InvalidArgumentException("Only numbers are accepted");
+        }
+
+        if (intval($number) == 0) {
+            throw new \InvalidArgumentException("Unsupported number. Columns should start with index 1");
         }
 
         $number = (int) $number;
@@ -483,15 +496,14 @@ class Writer
         $vowels = count($map);
 
         $number_one = (int) floor(($number-1)/$vowels);
-        $number_two = $number - $vowels*$number_one;
-
         $vowel_one = $number_one>0 && isset($map[$number_one-1])
             ? $map[$number_one-1]
             : '';
 
+        $number_two = $number - $vowels*$number_one;
         $vowel_two = isset($map[$number_two-1])
             ? $map[$number_two-1]
-            : $this->getLastColumn();
+            : '';
         return $vowel_one . $vowel_two;
     }
 

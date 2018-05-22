@@ -44,7 +44,7 @@ class WriteToPdfTest extends TestCase
         ]);
         $writer = Writer::createFromStyler($styler);
 
-        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToPdfTest') . ".pdf";
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToPdfTest_') . ".pdf";
         $writer->save($temp_file);
         $this->assertFileExists($temp_file);
 
