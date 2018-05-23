@@ -45,6 +45,7 @@ class Styler
      * Importa os dados a partir do Reader
      *
      * @param array $array
+     * @return ReportCollection\Libs\Styler
      */
     public static function createFromReader(Reader $reader)
     {
@@ -55,6 +56,11 @@ class Styler
         return $instance;
     }
 
+    /**
+     * Devolve a lista de estilos padrões
+     *
+     * @return array
+     */
     public function getDefaultStyles()
     {
         return $this->default_styles;
@@ -62,6 +68,7 @@ class Styler
 
     /**
      *  Devolve o reader usado para a estilização dos dados.
+     *
      * @return array
      */
     public function getReader()
@@ -71,6 +78,7 @@ class Styler
 
     /**
      *  Devolve os dados estruturados para estilização.
+     *
      * @return array
      */
     public function getBuffer()
@@ -108,6 +116,7 @@ class Styler
 
     /**
      * Aplica estilos com base nos indices do Excel.
+     *
      * @return bool
      */
     public function setStyles($range, $styles = [])
@@ -138,6 +147,16 @@ class Styler
     }
 
     /**
+     * Devolve os dados em forma de array.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->getBuffer();
+    }
+
+    /**
      * Resolve o range especificado no formato do excel, devolvendo
      * os índices correspondentes aos dados do buffer.
      * As colunas devem ser vogais e as linhas numeros começando a partir de 1.
@@ -145,6 +164,7 @@ class Styler
      * - coluna + linha (A23)
      * - apenas linha (23)
      * - apenas coluna (A)
+     *
      * @param  string $range
      * @return array
      */
@@ -180,6 +200,7 @@ class Styler
 
     /**
      * Aplica os estilos com base nos indices PHP.
+     *
      * @param  int $row
      * @param  int $col
      * @param  array $styles
@@ -240,6 +261,7 @@ class Styler
 
     /**
      * Aplica os estilos para bordas com base nos indices PHP.
+     *
      * @param  int $row
      * @param  int $col
      * @param  string $param
@@ -384,15 +406,4 @@ class Styler
             return $number + $vowels*$iterations;
         }
     }
-
-    /**
-     * Devolve os dados em forma de array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return $this->getBuffer();
-    }
-
 }

@@ -40,8 +40,9 @@ class Reader
      * Importa os dados a partir de um array
      *
      * @param array $array
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromArray(array $array)
+    public static function createFromArray(array $array) : Reader
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -62,8 +63,9 @@ class Reader
      * Ser passível de conversão para array (via atributos)
      *
      * @param mixed $object
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromObject($object)
+    public static function createFromObject($object) : Reader
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -105,8 +107,9 @@ class Reader
      *
      * @param string $filename Arquivo e caminho completo
      * @param string force_extension para arquivos sem extensão
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromFile($filename, $force_extension = null)
+    public static function createFromFile($filename, $force_extension = null) : Reader
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -146,8 +149,9 @@ class Reader
      * Importa os dados a partir de um arquivo CSV.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromCsv($filename)
+    public static function createFromCsv($filename) : Reader
     {
         return self::createFromFile($filename, 'csv');
     }
@@ -156,8 +160,9 @@ class Reader
      * Importa os dados a a partir de um arquivo Gnumeric.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromGnumeric($filename)
+    public static function createFromGnumeric($filename) : Reader
     {
         return self::createFromFile($filename, 'gnumeric');
     }
@@ -166,8 +171,9 @@ class Reader
      * Importa os dados a a partir de um arquivo HTML.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromHtml($filename)
+    public static function createFromHtml($filename) : Reader
     {
         return self::createFromFile($filename, 'html');
     }
@@ -176,8 +182,9 @@ class Reader
      * Importa os dados a partir de um trecho de código html
      *
      * @param string $string
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromHtmlString($string)
+    public static function createFromHtmlString($string) : Reader
     {
         // Cria um arquivo temporário
         $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
@@ -194,8 +201,9 @@ class Reader
      * Importa os dados a a partir de um arquivo ODS.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromOds($filename)
+    public static function createFromOds($filename) : Reader
     {
         return self::createFromFile($filename, 'ods');
     }
@@ -204,8 +212,9 @@ class Reader
      * Importa os dados a a partir de um arquivo SLK.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromSlk($filename)
+    public static function createFromSlk($filename) : Reader
     {
         return self::createFromFile($filename, 'slk');
     }
@@ -214,8 +223,9 @@ class Reader
      * Importa os dados a a partir de um arquivo XLS.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXls($filename)
+    public static function createFromXls($filename) : Reader
     {
         return self::createFromFile($filename, 'xls');
     }
@@ -224,8 +234,9 @@ class Reader
      * Importa os dados a a partir de um arquivo XLSX.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXlsx($filename)
+    public static function createFromXlsx($filename) : Reader
     {
         return self::createFromFile($filename, 'xlsx');
     }
@@ -234,8 +245,9 @@ class Reader
      * Importa os dados a a partir de um arquivo XML.
      *
      * @param string $filename Caminho completo até o arquivo
+     * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXml($filename)
+    public static function createFromXml($filename) : Reader
     {
         return self::createFromFile($filename, 'xml');
     }
@@ -245,13 +257,15 @@ class Reader
      * O formato deve ser uma string com o código da formatação.
      * Ex: O formato d/m/Y resultará em 31/12/9999.
      * Caso um formato não seja especificado, a biblioteca tentará
-     * detectar a data automaticamente. 
+     * detectar a data automaticamente.
      * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
      * @param string $format
+     * @return ReportCollection\Libs\Reader
      */
-    public function setInputDateFormat($format)
+    public function setInputDateFormat($format) : Reader
     {
         $this->input_format_date = $format;
+        return $this;
     }
 
     /**
@@ -261,6 +275,55 @@ class Reader
     public function getBuffer()
     {
         return $this->buffer;
+    }
+
+    /**
+     * Devolve os dados em forma de array.
+     *
+     * @return array
+     */
+    public function toArray() : array
+    {
+        if($this->data !== null) {
+            return $this->data;
+        }
+
+        if ($this->type == 'spreadsheet') {
+            $this->data = $this->parseDataFromSpreadsheet($this->buffer, $this->extension);
+
+        } else {
+            $this->data = $this->parseDataFromArray($this->buffer);
+        }
+
+        return $this->data;
+    }
+
+    /**
+     * Devolve os dados em formato XML.
+     *
+     * @return string
+     */
+    public function toXml() : string
+    {
+        $data = $this->toArray();
+
+        $writer = new \SimpleXMLElement('<Table/>');
+        $headers = [];
+        foreach ($data as $index => $item) {
+
+            if ($index==0) {
+                $headers = $item;
+            }
+            $child = $writer->addChild('Row');
+            foreach ($headers as $k => $name) {
+                $child->addChild('Cell', $item[$k]);
+            }
+        }
+
+        $dom = dom_import_simplexml($writer)->ownerDocument;
+        $dom->formatOutput = true;
+        // $dom->save($filename);
+        return $dom->saveXML();
     }
 
     private function parseDataFromSpreadsheet(Spreadsheet $sheet, $extension)
@@ -393,54 +456,5 @@ class Reader
             }
         }
         return $data;
-    }
-
-    /**
-     * Devolve os dados em forma de array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        if($this->data !== null) {
-            return $this->data;
-        }
-
-        if ($this->type == 'spreadsheet') {
-            $this->data = $this->parseDataFromSpreadsheet($this->buffer, $this->extension);
-
-        } else {
-            $this->data = $this->parseDataFromArray($this->buffer);
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Devolve os dados em formato XML.
-     *
-     * @return string
-     */
-    public function toXml()
-    {
-        $data = $this->toArray();
-
-        $writer = new \SimpleXMLElement('<Table/>');
-        $headers = [];
-        foreach ($data as $index => $item) {
-
-            if ($index==0) {
-                $headers = $item;
-            }
-            $child = $writer->addChild('Row');
-            foreach ($headers as $k => $name) {
-                $child->addChild('Cell', $item[$k]);
-            }
-        }
-
-        $dom = dom_import_simplexml($writer)->ownerDocument;
-        $dom->formatOutput = true;
-        // $dom->save($filename);
-        return $dom->saveXML();
     }
 }

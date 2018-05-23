@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace ReportCollection\Libs;
 
@@ -8,7 +8,7 @@ use PhpOffice\PhpSpreadsheet\Reader;
 use PhpOffice\PhpSpreadsheet\Style;
 use Illuminate\Support\Str;
 
-class Collector
+class OldCollector
 {
     /** @var ReportCollection\Libs\Collector */
     private static $instance = null;
@@ -61,14 +61,14 @@ class Collector
         'border-color-inside'   => '#eeeeee',
         'border-color-outside'  => '#555555',
 
-        // none, 
-        // dash-dot, dash-dot-dot, dashed, dotted, double, hair, medium, 
+        // none,
+        // dash-dot, dash-dot-dot, dashed, dotted, double, hair, medium,
         // medium-dash-dot, medium-dashed, slant-dash-dot, thick, thin
         'border-style-inside'   => 'thin',
         'border-style-outside'  => 'thick',
 
         'line-height'           => '25',
-        
+
         'color'                 => '#555555',
         'font-face'             => 'Arial',
         'font-size'             => '11',
@@ -101,7 +101,7 @@ class Collector
 
     /** @var bool Chave para setar o modo de debug */
     public $debug_mode = false;
-    
+
     /** @var array */
     public $debug_info = [];
 
@@ -121,7 +121,7 @@ class Collector
      * Cria uma planilha a partir de um arquivo.
      * As extensões suportadas são:
      * csv, gnumeric, htm, html, ods, slk, xls, xlsx e xml
-     * 
+     *
      * @param string $filename Arquivo e caminho completo
      * @param string force_extension para arquivos sem extensão
      */
@@ -158,7 +158,7 @@ class Collector
 
     /**
      * Cria uma planilha a partir de um trecho de código html
-     * 
+     *
      * @param string $string
      */
     public static function createFromHtmlString($string)
@@ -180,7 +180,7 @@ class Collector
 
     /**
      * Cria uma planilha a partir de um array
-     * 
+     *
      * @param array $array
      */
     public static function createFromArray(array $array)
@@ -206,13 +206,13 @@ class Collector
     /**
      * Cria uma planilha a partir de um objeto.
      * O objeto deve:
-     * 
+     *
      * Implementar o método toArray()
      * ou
      * Ser iterável
      * ou
      * Ser passível de conversão para array (via atributos)
-     * 
+     *
      * @param mixed $object
      */
     public static function createFromObject($object)
@@ -279,10 +279,10 @@ class Collector
 
     /**
      * Devolve a última linha da planilha.
-     * 
+     *
      * @return int
      */
-    public function getLastRow() 
+    public function getLastRow()
     {
         if($this->last_row == null) {
             $this->last_row = (int) $this->getActiveSheet()->getHighestRow();
@@ -293,10 +293,10 @@ class Collector
 
     /**
      * Devolve a última coluna da planilha.
-     * 
+     *
      * @return int
      */
-    public function getLastColumn() 
+    public function getLastColumn()
     {
         if($this->last_col == null) {
             $col = $this->getActiveSheet()->getHighestColumn();
@@ -312,7 +312,7 @@ class Collector
 
     /**
      * Seta estilos para personalizar o cabeçalho da planilha.
-     * 
+     *
      * @return array
      */
     public function setHeaderStyles(array $styles)
@@ -323,7 +323,7 @@ class Collector
 
     /**
      * Seta estilos para personalizar o corpo da planilha.
-     * 
+     *
      * @return array
      */
     public function setBodyStyles(array $styles)
@@ -396,7 +396,7 @@ class Collector
                 $this->applyStyles('body', $row, $col);
             }
         }
-    }    
+    }
 
     /**
      * Prepara e configura o cabeçalho da planilha.
@@ -419,7 +419,7 @@ class Collector
             $styles = count($row['styles'])>0 ? $row['styles'] : [];
             $styles = $this->normalizeStyles($styles, 'header');
 
-            // Mescla as colunas para criar as linhas de cabeçalho            
+            // Mescla as colunas para criar as linhas de cabeçalho
             if ($row['colspan'] == 'auto') {
                 $row['colspan'] = $this->getLastColumn();
             }
@@ -473,13 +473,13 @@ class Collector
 
         foreach ($styles as $param => $value) {
 
-            if ($this->debug_mode == true 
+            if ($this->debug_mode == true
             && !in_array($param, [
-                    'background-color-odd', 
+                    'background-color-odd',
                     'background-color-even',
-                    'border-color-inside', 
+                    'border-color-inside',
                     'border-color-outside',
-                    'border-style-inside', 
+                    'border-style-inside',
                     'border-style-outside',
                 ])
             ) {
@@ -533,7 +533,7 @@ class Collector
                     break;
 
                 case 'text-align':
-                    $align = $this->getMappedHorizontalAlign($value);                    
+                    $align = $this->getMappedHorizontalAlign($value);
                     $object->getAlignment()->setHorizontal($align);
                     $this->debugStyle($target, $row, $col, $param, $value);
                     break;
@@ -559,7 +559,7 @@ class Collector
         $row_control = $row-1;
 
         $param = ($row_control%2 == 0)
-            ? 'background-color-odd' 
+            ? 'background-color-odd'
             : 'background-color-even';
 
         if (!isset($styles[$param])) {
@@ -617,11 +617,11 @@ class Collector
         }
         if ($col == null) {
             throw new InvalidArgumentException("The \$col argument can not be null for the target other than 'default'");
-        }        
+        }
 
         // Bordas internas
         // --------------------------------------------------
-        
+
         if ($styles['border-style-inside'] != 'none') {
 
             $inside_style = $this->getMappedBorderStyle($styles['border-style-inside']);
@@ -713,7 +713,7 @@ class Collector
             // Aplica a altura na linha especificada
             // Passando pela primeira coluna, aplica na linha toda
             if ($col == 1) {
-                $this->getActiveSheet()->getRowDimension($row)->setRowHeight($height_value);    
+                $this->getActiveSheet()->getRowDimension($row)->setRowHeight($height_value);
             }
 
         } else {
@@ -724,9 +724,9 @@ class Collector
     }
 
     /**
-     * Interpreta o conteúdo de uma string e aplica os estilos 
+     * Interpreta o conteúdo de uma string e aplica os estilos
      * de acordo com as tags informadas
-     * 
+     *
      * @return \PhpOffice\PhpSpreadsheet\RichText\RichText
      */
     private function parseHtmlText($string, array $styles = null)
@@ -753,7 +753,7 @@ class Collector
             $strip_styles[] = 't';
             $strips[] = $richs[1][$index]; // adiciona conteudo da tag
             $strip_styles[] = substr($tagged, 1, 1);
-            $string = $split[1]; // atualiza a string             
+            $string = $split[1]; // atualiza a string
         }
 
         if (!empty($string)) {
@@ -818,7 +818,7 @@ class Collector
 
     /**
      * Devolve os dados da planilha em forma de array.
-     * 
+     *
      * @return array
      */
     public function toArray()
@@ -844,7 +844,7 @@ class Collector
 
     /**
      * Devolve os dados da planilha em forma de xml.
-     * 
+     *
      * @return string
      */
     public function toXml()
@@ -863,7 +863,7 @@ class Collector
                 $child->addChild('Cell', $item[$k]);
             }
         }
-        
+
         $dom = dom_import_simplexml($writer)->ownerDocument;
         $dom->formatOutput = true;
         // $dom->save($filename);
@@ -874,7 +874,7 @@ class Collector
      * Salva a planilha em um formato especifico.
      * As extensões suportadas são:
      * csv, html, ods, pdf, xls e xlsx
-     * 
+     *
      * @param string $filename Arquivo e caminho completo
      * @param string force_extension para arquivos sem extensão
      */
@@ -885,7 +885,7 @@ class Collector
         $this->setupHeader();
 
         $this->setupBody();
-        
+
 
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
@@ -917,7 +917,7 @@ class Collector
      * Força o download da planilha em um formato especifico.
      * As extensões suportadas são:
      * csv, html, ods, pdf, xls e xlsx
-     * 
+     *
      * @param string $filename Nome do arquivo com extensão
      */
     public function download($filename)
@@ -957,7 +957,7 @@ class Collector
         header('Content-Disposition: attachment;filename="'.$basename.'"');
         header('Cache-Control: max-age=0');
         header('Cache-Control: max-age=1'); //IE 9
-        
+
         // Para evitar cache no IE
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Data no passado
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); // Sempre modificado
@@ -1028,9 +1028,9 @@ class Collector
     }
 
     /**
-     * Devolve o parâmetro correto de alinhamento vertical, com base 
+     * Devolve o parâmetro correto de alinhamento vertical, com base
      * nas constantes da biblioteca PHPSpreadsheet
-     * 
+     *
      * @return string
      */
     private function getMappedVerticalAlign($param)
@@ -1053,9 +1053,9 @@ class Collector
     }
 
     /**
-     * Devolve o parâmetro correto de alinhamento vertical, com base 
+     * Devolve o parâmetro correto de alinhamento vertical, com base
      * nas constantes da biblioteca PHPSpreadsheet
-     * 
+     *
      * @return string
      */
     private function getMappedHorizontalAlign($param)
@@ -1081,32 +1081,32 @@ class Collector
     }
 
     /**
-     * Devolve o parâmetro correto de uma borda, com base 
+     * Devolve o parâmetro correto de uma borda, com base
      * nas constantes da biblioteca PHPSpreadsheet
-     * 
+     *
      * @return string
      */
     private function getMappedBorderStyle($param)
     {
         $map = [
-            'none'                => Style\Border::BORDER_NONE, 
-            'dash-dot'            => Style\Border::BORDER_DASHDOT, 
-            'dash-dot-dot'        => Style\Border::BORDER_DASHDOTDOT, 
-            'dashed'              => Style\Border::BORDER_DASHED, 
-            'dotted'              => Style\Border::BORDER_DOTTED, 
-            'double'              => Style\Border::BORDER_DOUBLE, 
-            'hair'                => Style\Border::BORDER_HAIR, 
-            'medium'              => Style\Border::BORDER_MEDIUM, 
-            'medium-dash-dot'     => Style\Border::BORDER_MEDIUMDASHDOT, 
-            'medium-dash-dot-dot' => Style\Border::BORDER_MEDIUMDASHDOTDOT, 
-            'medium-dashed'       => Style\Border::BORDER_MEDIUMDASHED, 
-            'slant-dash-dot'      => Style\Border::BORDER_SLANTDASHDOT, 
-            'thick'               => Style\Border::BORDER_THICK, 
+            'none'                => Style\Border::BORDER_NONE,
+            'dash-dot'            => Style\Border::BORDER_DASHDOT,
+            'dash-dot-dot'        => Style\Border::BORDER_DASHDOTDOT,
+            'dashed'              => Style\Border::BORDER_DASHED,
+            'dotted'              => Style\Border::BORDER_DOTTED,
+            'double'              => Style\Border::BORDER_DOUBLE,
+            'hair'                => Style\Border::BORDER_HAIR,
+            'medium'              => Style\Border::BORDER_MEDIUM,
+            'medium-dash-dot'     => Style\Border::BORDER_MEDIUMDASHDOT,
+            'medium-dash-dot-dot' => Style\Border::BORDER_MEDIUMDASHDOTDOT,
+            'medium-dashed'       => Style\Border::BORDER_MEDIUMDASHED,
+            'slant-dash-dot'      => Style\Border::BORDER_SLANTDASHDOT,
+            'thick'               => Style\Border::BORDER_THICK,
             'thin'                => Style\Border::BORDER_THIN,
         ];
 
-        return isset($map[$param]) 
-            ? $map[$param] 
+        return isset($map[$param])
+            ? $map[$param]
             : Style\Border::BORDER_NONE;
     }
 
@@ -1138,7 +1138,7 @@ class Collector
 
     /**
      * Converte uma coluna numérica para as vogais correspondentes.
-     * 
+     *
      * @param int $number
      * @return string
      */
@@ -1157,19 +1157,19 @@ class Collector
         $number_one = (int) floor(($number-1)/$vowels);
         $number_two = $number - $vowels*$number_one;
 
-        $vowel_one = $number_one>0 && isset($map[$number_one-1]) 
-            ? $map[$number_one-1] 
+        $vowel_one = $number_one>0 && isset($map[$number_one-1])
+            ? $map[$number_one-1]
             : '';
 
-        $vowel_two = isset($map[$number_two-1]) 
-            ? $map[$number_two-1] 
+        $vowel_two = isset($map[$number_two-1])
+            ? $map[$number_two-1]
             : $this->getLastColumn();
         return $vowel_one . $vowel_two;
     }
 
     /**
      * Converte uma coluna de vogais para um valor numérico.
-     * 
+     *
      * @param string $vowel
      * @return int
      */
@@ -1189,7 +1189,7 @@ class Collector
             return isset($map[$vowel]) ? $map[$vowel]+1 : 1;
 
         } else {
-            
+
             $iterations = isset($map[$vowel[0]]) ? $map[$vowel[0]]+1 : 1;
             $number = isset($map[$vowel[1]]) ? $map[$vowel[1]]+1 : 1;
             return $number + $vowels*$iterations;
@@ -1197,9 +1197,9 @@ class Collector
     }
 
     /**
-     * Normaliza os estilos especificados, adicionando os 
+     * Normaliza os estilos especificados, adicionando os
      * estilos padrões quando estes não estiverem presentes.
-     * 
+     *
      * @param array $styles
      * @param string $based_on header|body|default
      * @return array
@@ -1219,11 +1219,11 @@ class Collector
                 $base_styles = $this->default_styles;
                 break;
         }
-        
+
         foreach($base_styles as $attr => $value) {
 
             $clean_styles[$attr] = isset($styles[$attr])
-                ? $styles[$attr] 
+                ? $styles[$attr]
                 : $value;
         }
 

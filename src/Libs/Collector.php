@@ -142,11 +142,24 @@ class Collector extends Reader
         return $this;
     }
 
+    /**
+     * Grava o resultado em arquivo.
+     *
+     * @param  string  $filename
+     * @param  boolean $download
+     * @return void
+     */
     public function save($filename, $download = false)
     {
         return $this->getWriter()->save($filename, $download = false);
     }
 
+    /**
+     * Libera o buffer e força o download.
+     *
+     * @param string $filename
+     * @return void
+     */
     public function output($filename)
     {
         return $this->getWriter()->output($filename);

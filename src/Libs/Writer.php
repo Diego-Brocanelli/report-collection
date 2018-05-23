@@ -61,6 +61,7 @@ class Writer
      * Importa os dados a partir do Reader
      *
      * @param ReportCollection\Libs\Reader $reader
+     * @return ReportCollection\Libs\Writer
      */
     public static function createFromReader(Reader $reader)
     {
@@ -75,6 +76,7 @@ class Writer
      * Importa os dados a partir do Styler
      *
      * @param ReportCollection\Libs\Styler $styler
+     * @return ReportCollection\Libs\Writer
      */
     public static function createFromStyler(Styler $styler)
     {
@@ -110,6 +112,7 @@ class Writer
 
     /**
      *  Devolve os dados estruturados para estilização.
+     *
      * @return array
      */
     public function getBuffer()
@@ -119,6 +122,7 @@ class Writer
 
     /**
      * Seta a informação de criador do documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -130,6 +134,7 @@ class Writer
 
     /**
      * Seta a última pessoa a alterar o documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -141,6 +146,7 @@ class Writer
 
     /**
      * Seta o título do documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -152,6 +158,7 @@ class Writer
 
     /**
      * Seta o assunto do documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -163,6 +170,7 @@ class Writer
 
     /**
      * Seta a descrição do documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -174,6 +182,7 @@ class Writer
 
     /**
      * Seta palavras chave para o documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -185,6 +194,7 @@ class Writer
 
     /**
      * Seta a categoria do documento.
+     *
      * @param string $string
      * @return ReportCollection\Libs\Writer
      */
@@ -198,6 +208,7 @@ class Writer
      * Especifica o formato das datas no arquivo resultante da gravação.
      * O formato deve ser uma string com o código da formatação.
      * Ex: O formato d/m/Y resultará em 31/12/9999
+     *
      * @see https://secure.php.net/manual/pt_BR/datetime.createfromformat.php
      * @param string $format
      * @return ReportCollection\Libs\Writer
@@ -212,6 +223,7 @@ class Writer
      * Define a largura padrão de uma coluna.
      * O valor de $col pode ser especificado como vogal (no estilo excel)
      * ou como índice numérico (começando com 0)
+     *
      * @param mixed $col
      * @param int $value
      * @throws \InvalidArgumentException
@@ -224,6 +236,58 @@ class Writer
         }
         $this->columns_widths[$col] = (int) $value;
         return $this;
+    }
+
+    /**
+     * Grava o resultado em arquivo.
+     *
+     * @param  string  $filename
+     * @param  boolean $download
+     * @return void
+     */
+    public function save($filename, $download = false)
+    {
+        $basename  = pathinfo($filename, PATHINFO_BASENAME);
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+
+        $factory = null;
+        foreach($this->writers as $slug => $writer) {
+
+            if ($extension == $slug && $slug == 'pdf') {
+                IOFactory::registerWriter('CustomPDF', PDFWriter::class);
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomPDF');
+            } elseif ($extension == $slug && in_array($slug, ['html', 'htm']) == true) {
+                IOFactory::registerWriter('CustomHtml', HtmlWriter::class);
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomHtml');
+
+            } elseif ($extension == $slug) {
+                $factory = IOFactory::createWriter($this->getSpreadsheet(), $writer);
+            }
+        }
+
+        if ($factory == null) {
+            throw new \InvalidArgumentException(
+                "Unsupported file type for writing. Use " . implode(',', $this->writers));
+        }
+
+        if ($download == true) {
+            $this->httpHeaders($basename, $extension);
+            $factory->save('php://output');
+        } else {
+            $factory->save($filename);
+        }
+    }
+
+    /**
+     * Libera o buffer e força o download.
+     *
+     * @param string $filename
+     * @return void
+     */
+    public function output($filename)
+    {
+        $basename  = pathinfo($filename, PATHINFO_BASENAME);
+        $this->save($basename, true);
     }
 
     private function getSpreadsheet()
@@ -505,45 +569,6 @@ class Writer
             ? $map[$number_two-1]
             : '';
         return $vowel_one . $vowel_two;
-    }
-
-    public function save($filename, $download = false)
-    {
-        $basename  = pathinfo($filename, PATHINFO_BASENAME);
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-
-        $factory = null;
-        foreach($this->writers as $slug => $writer) {
-
-            if ($extension == $slug && $slug == 'pdf') {
-                IOFactory::registerWriter('CustomPDF', PDFWriter::class);
-                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomPDF');
-            } elseif ($extension == $slug && in_array($slug, ['html', 'htm']) == true) {
-                IOFactory::registerWriter('CustomHtml', HtmlWriter::class);
-                $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomHtml');
-
-            } elseif ($extension == $slug) {
-                $factory = IOFactory::createWriter($this->getSpreadsheet(), $writer);
-            }
-        }
-
-        if ($factory == null) {
-            throw new \InvalidArgumentException(
-                "Unsupported file type for writing. Use " . implode(',', $this->writers));
-        }
-
-        if ($download == true) {
-            $this->httpHeaders($basename, $extension);
-            $factory->save('php://output');
-        } else {
-            $factory->save($filename);
-        }
-    }
-
-    public function output($filename)
-    {
-        $basename  = pathinfo($filename, PATHINFO_BASENAME);
-        $this->save($basename, true);
     }
 
     private function httpHeaders($basename, $extension)
