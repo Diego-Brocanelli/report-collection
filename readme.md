@@ -1,11 +1,38 @@
 # Report Collection
 
+![PHP Version](https://img.shields.io/packagist/php-v/plexi/report-collection.svg)
+![Laravel](https://img.shields.io/badge/laravel->=5.5.0-red.svg?style=flat)
+![Packagist](https://img.shields.io/packagist/v/plexi/report-collection.svg)
+![Downloads](https://img.shields.io/packagist/dm/plexi/report-collection.svg)
+
 *By [Ricardo Pereira Dias &copy;](https://github.com/rpdesignerfly)*
 
-Report Collection é uma biblioteca que permite a manipulação de uma gama de tipos de listas de dados a fim de serem exportadas em arquivos de relatório ou simplesmente usadas em qualquer projeto PHP.
+Report Collection é uma biblioteca que permite a importação de dados proveniente de diversas fontes, para posterior tratamento e exportação.
 
-> **Atenção**:
-> Esta biblioteca está em fase de desenvolvimento. Use-a por sua conta e risco!
+Seu principal objetivo é a geração de relatórios para download, embora possa também ser usado unicamente para manipulação das informações.
+
+Ela é capaz de importar dados das seguintes fontes:
+
+* Arrays
+* Objetos
+* Strings Html
+* Arquivos Html
+* Arquivos Csv
+* Planilhas Gnumeric
+* Planilhas Ods
+* Planilhas Slk
+* Planilhas Xls
+* Planilhas Xlsx
+* Planilhas Xml
+
+Ela é capaz de exportar dados para os seguintes formatos:
+
+* Arquivos Html 5
+* Arquivos Csv
+* Planilhas Xls
+* Planilhas Xlsx
+* Planilhas Ods (Suporte parcial)
+
 
 Sinta-se à vontade para conferir os [releases](https://github.com/rpdesignerfly/report-collection/releases), a [licença](license.md) e a [documentação](docs/01-About.md).
 

@@ -2,6 +2,8 @@
 
 ## Para desenvolver o pacote:
 
+Embora a biblioteca ReportCollection seja independente de framework, os testes de unidade utilizam as funcionalidades do Laravel, portanto, será necessário uma instalação limpa do framework.
+
 ### 1. Instalação limpa do Laravel:
 
 A primeira coisa a ser feita é criar uma instalação limpa do Laravel:
