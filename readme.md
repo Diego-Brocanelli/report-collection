@@ -11,7 +11,9 @@ Sinta-se à vontade para conferir os [releases](https://github.com/rpdesignerfly
 
 ### Características
 
-  * Feito para o Laravel 5.5 ou superior.
+  * Feito para o PHP 7 ou superior.
+  * Pode ser usado como biblioteca independente
+  * Pode ser usado como Facade no Laravel 5.5 ou superior.
   * Configuração automática.
   * Bem documentado &amp; amigável para IDEs.
   * Bem testado e com máxima qualidade de código.
