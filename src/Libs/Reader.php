@@ -62,10 +62,10 @@ class Reader
      * ou
      * Ser passível de conversão para array (via atributos)
      *
-     * @param mixed $object
+     * @param object $object
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromObject($object) : Reader
+    public static function createFromObject(object $object) : Reader
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -109,7 +109,7 @@ class Reader
      * @param string force_extension para arquivos sem extensão
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromFile($filename, $force_extension = null) : Reader
+    public static function createFromFile(string $filename, $force_extension = null) : Reader
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -151,7 +151,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromCsv($filename) : Reader
+    public static function createFromCsv(string $filename) : Reader
     {
         return self::createFromFile($filename, 'csv');
     }
@@ -162,7 +162,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromGnumeric($filename) : Reader
+    public static function createFromGnumeric(string $filename) : Reader
     {
         return self::createFromFile($filename, 'gnumeric');
     }
@@ -173,7 +173,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromHtml($filename) : Reader
+    public static function createFromHtml(string $filename) : Reader
     {
         return self::createFromFile($filename, 'html');
     }
@@ -184,11 +184,11 @@ class Reader
      * @param string $string
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromHtmlString($string) : Reader
+    public static function createFromHtmlString(string $html) : Reader
     {
         // Cria um arquivo temporário
         $temp_file = tempnam(sys_get_temp_dir(), uniqid('report-collection'));
-        file_put_contents($temp_file, $string);
+        file_put_contents($temp_file, $html);
 
         // Carrega o arquivo na planilha
         $instance = self::createFromHtml($temp_file);
@@ -203,7 +203,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromOds($filename) : Reader
+    public static function createFromOds(string $filename) : Reader
     {
         return self::createFromFile($filename, 'ods');
     }
@@ -214,7 +214,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromSlk($filename) : Reader
+    public static function createFromSlk(string $filename) : Reader
     {
         return self::createFromFile($filename, 'slk');
     }
@@ -225,7 +225,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXls($filename) : Reader
+    public static function createFromXls(string $filename) : Reader
     {
         return self::createFromFile($filename, 'xls');
     }
@@ -236,7 +236,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXlsx($filename) : Reader
+    public static function createFromXlsx(string $filename) : Reader
     {
         return self::createFromFile($filename, 'xlsx');
     }
@@ -247,7 +247,7 @@ class Reader
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Reader
      */
-    public static function createFromXml($filename) : Reader
+    public static function createFromXml(string $filename) : Reader
     {
         return self::createFromFile($filename, 'xml');
     }
@@ -262,7 +262,7 @@ class Reader
      * @param string $format
      * @return ReportCollection\Libs\Reader
      */
-    public function setInputDateFormat($format) : Reader
+    public function setInputDateFormat(string $format) : Reader
     {
         $this->input_format_date = $format;
         return $this;

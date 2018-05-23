@@ -27,10 +27,10 @@ class Accessor
      * ou
      * Ser passível de conversão para array (via atributos)
      *
-     * @param mixed $object
+     * @param object $object
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromObject($object)
+    public static function createFromObject(object $object)
     {
         return Collector::createFromObject($object);
     }
@@ -44,7 +44,7 @@ class Accessor
      * @param string force_extension para arquivos sem extensão
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromFile($filename, $force_extension = null)
+    public static function createFromFile(string $filename, $force_extension = null)
     {
         return Collector::createFromFile($filename, $force_extension);
     }
@@ -55,7 +55,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromCsv($filename)
+    public static function createFromCsv(string $filename)
     {
         return Collector::createFromCsv($filename);
     }
@@ -66,7 +66,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromGnumeric($filename)
+    public static function createFromGnumeric(string $filename)
     {
         return Collector::createFromGnumeric($filename);
     }
@@ -77,7 +77,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromHtml($filename)
+    public static function createFromHtml(string $filename)
     {
         return Collector::createFromHtml($filename);
     }
@@ -88,9 +88,9 @@ class Accessor
      * @param string $string
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromHtmlString($string)
+    public static function createFromHtmlString(string $string)
     {
-        return Collector::createFromHtmlString($filename);
+        return Collector::createFromHtmlString($string);
     }
 
     /**
@@ -99,7 +99,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromOds($filename)
+    public static function createFromOds(string $filename)
     {
         return Collector::createFromOds($filename);
     }
@@ -110,7 +110,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromSlk($filename)
+    public static function createFromSlk(string $filename)
     {
         return Collector::createFromSlk($filename);
     }
@@ -121,7 +121,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromXls($filename)
+    public static function createFromXls(string $filename)
     {
         return Collector::createFromXls($filename);
     }
@@ -132,7 +132,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromXlsx($filename)
+    public static function createFromXlsx(string $filename)
     {
         return Collector::createFromXlsx($filename);
     }
@@ -143,7 +143,7 @@ class Accessor
      * @param string $filename Caminho completo até o arquivo
      * @return ReportCollection\Libs\Collector
      */
-    public static function createFromXml($filename)
+    public static function createFromXml(string $filename)
     {
         return Collector::createFromXml($filename);
     }

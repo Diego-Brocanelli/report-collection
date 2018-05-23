@@ -22,6 +22,7 @@ class DateParser
      * Retorna informações de debug para testes de unidade.
      * São informadas através das seguintes chaves:
      * type, method, parser, original, fixed, returned, error
+     *
      * @return array
      */
     public static function getDebug()
@@ -33,6 +34,7 @@ class DateParser
      * Transforma um string válida em timestamp,
      * ou false em caso de falha.
      * Funciona como a função strtotime, só que usando timezones.
+     *
      * @see strtotime
      * @param  string $string
      * @param  string $timezone
@@ -55,6 +57,7 @@ class DateParser
     /**
      * Interpreta a data especificada e devolve um objeto DateParse
      * ou false em caso de falha
+     *
      * @param  mixed $input
      * @param  string $format
      * @param  string $timezone
@@ -160,6 +163,7 @@ class DateParser
 
     /**
      * Verifica se o valor passado é um timestamp unix válido.
+     *
      * @param  mixed  $timestamp
      * @return boolean
      */
@@ -179,6 +183,7 @@ class DateParser
 
     /**
      * Devolve o timestamp resultante do processo de interpretação da data.
+     *
      * @return int
      */
     public function getTimestamp()
@@ -189,6 +194,7 @@ class DateParser
     /**
      * Devolve o timestamp resultante do processo de interpretação da data
      * em formato de data serial do excel.
+     *
      * @return float
      */
     public function getExcel()
@@ -199,6 +205,7 @@ class DateParser
     /**
      * Devolve o timestamp resultante do processo de interpretação da data
      * em formato de objeto
+     * 
      * @return \DateTime
      */
     public function getDateObject()

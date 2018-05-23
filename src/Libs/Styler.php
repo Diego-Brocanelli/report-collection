@@ -47,7 +47,7 @@ class Styler
      * @param array $array
      * @return ReportCollection\Libs\Styler
      */
-    public static function createFromReader(Reader $reader)
+    public static function createFromReader(Reader $reader) : Styler
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -61,7 +61,7 @@ class Styler
      *
      * @return array
      */
-    public function getDefaultStyles()
+    public function getDefaultStyles() : array
     {
         return $this->default_styles;
     }
@@ -71,7 +71,7 @@ class Styler
      *
      * @return array
      */
-    public function getReader()
+    public function getReader() : Reader
     {
         return $this->reader;
     }
@@ -81,7 +81,7 @@ class Styler
      *
      * @return array
      */
-    public function getBuffer()
+    public function getBuffer() : array
     {
         if($this->buffer !== null) {
             return $this->buffer;
@@ -107,11 +107,12 @@ class Styler
     /**
      *  Reseta os dados do buffer, voltando-os para o estado inicial
      *  recebido do Reader.
-     * @return void
+     * @return ReportCollection\Libs\Styler
      */
-    public function resetBuffer()
+    public function resetBuffer() : Styler
     {
         $this->buffer = null;
+        return $this;
     }
 
     /**
@@ -119,7 +120,7 @@ class Styler
      *
      * @return bool
      */
-    public function setStyles($range, $styles = [])
+    public function setStyles($range, array $styles = []) : bool
     {
         $range = $this->resolveRange($range);
 
@@ -151,7 +152,7 @@ class Styler
      *
      * @return array
      */
-    public function toArray()
+    public function toArray() : array
     {
         return $this->getBuffer();
     }
@@ -168,7 +169,7 @@ class Styler
      * @param  string $range
      * @return array
      */
-    protected function resolveRange($range)
+    protected function resolveRange($range) : array
     {
         $row = $col = null;
 
@@ -206,7 +207,7 @@ class Styler
      * @param  array $styles
      * @return bool
      */
-    protected function applyStyles($row, $col, $styles)
+    protected function applyStyles($row, $col, array $styles) : bool
     {
         $buffer = $this->getBuffer();
 
@@ -268,7 +269,7 @@ class Styler
      * @param  string $value
      * @return bool
      */
-    protected function applyBorderStyle($row, $col, $param, $value)
+    protected function applyBorderStyle($row, $col, string $param, $value) : bool
     {
         $buffer = $this->getBuffer();
 
@@ -308,7 +309,7 @@ class Styler
         return true;
     }
 
-    protected function applyBorderTop($row, $col, $param, $value)
+    protected function applyBorderTop($row, $col, string $param, $value)
     {
         if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
             unset($this->buffer[$row][$col]['styles'][$param]);
@@ -320,7 +321,7 @@ class Styler
         }
     }
 
-    protected function applyBorderLeft($row, $col, $param, $value)
+    protected function applyBorderLeft($row, $col, string $param, $value)
     {
         if ($value == 'none' && isset($this->buffer[$row][$col]['styles'][$param])) {
             unset($this->buffer[$row][$col]['styles'][$param]);
@@ -332,7 +333,7 @@ class Styler
         }
     }
 
-    protected function applyBorderRight($row, $col, $param, $value)
+    protected function applyBorderRight($row, $col, string $param, $value)
     {
         $names = explode('-', $param);
         //$direction = $names[1]; // top, right, bottom, left
@@ -355,7 +356,7 @@ class Styler
         }
     }
 
-    protected function applyBorderBottom($row, $col, $param, $value)
+    protected function applyBorderBottom($row, $col, string $param, $value)
     {
         $names = explode('-', $param);
         //$direction = $names[1]; // top, right, bottom, left
@@ -384,7 +385,7 @@ class Styler
      * @param string $vowel
      * @return int
      */
-    protected function getColumnNumber($vowel)
+    protected function getColumnNumber(string $vowel)
     {
         if (is_numeric($vowel)) {
             return (int) $vowel;

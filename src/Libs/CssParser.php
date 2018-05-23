@@ -41,13 +41,13 @@ class CssParser
      * @param  array $styles
      * @return array ou false
      */
-    public static function parse($styles)
+    public static function parse(array $styles) : array
     {
         $instance = new self;
         return $instance->parseStyles($styles);
     }
 
-    protected function parseStyles($styles)
+    protected function parseStyles(array $styles) : array
     {
         foreach ($styles as $param => $value) {
 
@@ -89,7 +89,7 @@ class CssParser
         return $styles;
     }
 
-    protected function parseHex($hex)
+    protected function parseHex(string $hex) : string
     {
         $is_hex = preg_match('/^#[0-9a-fA-F]*$/', $hex);
         if ($is_hex === 0 || $is_hex === false) {
@@ -115,9 +115,10 @@ class CssParser
      * Devolve o parâmetro correto de alinhamento vertical, com base
      * nas constantes da biblioteca PHPSpreadsheet
      *
+     * @param string $param
      * @return string
      */
-    private function getMappedVerticalAlign($param)
+    private function getMappedVerticalAlign(string $param) : string
     {
         switch($param) {
             case 'top':
@@ -140,9 +141,10 @@ class CssParser
      * Devolve o parâmetro correto de alinhamento vertical, com base
      * nas constantes da biblioteca PHPSpreadsheet
      *
+     * @param string $param
      * @return string
      */
-    private function getMappedHorizontalAlign($param)
+    private function getMappedHorizontalAlign(string $param) : string
     {
         switch($param) {
             case 'left':
@@ -167,9 +169,11 @@ class CssParser
     /**
      * Devolve o parâmetro correto de uma borda, com base
      * nas constantes da biblioteca PHPSpreadsheet
+     *
+     * @param string $param
      * @return string
      */
-    private function getMappedBorderStyle($param)
+    private function getMappedBorderStyle(string $param) : string
     {
         $map = [
             'none'                => Style\Border::BORDER_NONE,
@@ -196,9 +200,11 @@ class CssParser
     /**
      * Devolve o parâmetro correto de um preenchimento para cores de fundo,
      * com base nas constantes da biblioteca PHPSpreadsheet
+     *
+     * @param string $param
      * @return string
      */
-    private function getMappedBackgroundFill($param)
+    private function getMappedBackgroundFill(string $param) : string
     {
         $map = [
             'none'             => Style\Fill::FILL_NONE,

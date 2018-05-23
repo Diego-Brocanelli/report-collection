@@ -63,7 +63,7 @@ class Writer
      * @param ReportCollection\Libs\Reader $reader
      * @return ReportCollection\Libs\Writer
      */
-    public static function createFromReader(Reader $reader)
+    public static function createFromReader(Reader $reader) : Writer
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -78,7 +78,7 @@ class Writer
      * @param ReportCollection\Libs\Styler $styler
      * @return ReportCollection\Libs\Writer
      */
-    public static function createFromStyler(Styler $styler)
+    public static function createFromStyler(Styler $styler) : Writer
     {
         $classname = \get_called_class(); // para permitir abstração
         $instance = new $classname;
@@ -92,7 +92,7 @@ class Writer
      *  Devolve a instancia do Reader.
      * @return ReportCollection\Libs\Reader
      */
-    public function getReader()
+    public function getReader() : Reader
     {
         return $this->reader;
     }
@@ -101,7 +101,7 @@ class Writer
      *  Devolve a instancia do Styler.
      * @return ReportCollection\Libs\Styler
      */
-    public function getStyler()
+    public function getStyler() : Styler
     {
         if ($this->styler == null) {
             $this->styler = Styler::createFromReader($this->getReader());
@@ -115,7 +115,7 @@ class Writer
      *
      * @return array
      */
-    public function getBuffer()
+    public function getBuffer() : array
     {
         $this->getStyler()->getBuffer();
     }
@@ -123,84 +123,84 @@ class Writer
     /**
      * Seta a informação de criador do documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoCreator($string)
+    public function setInfoCreator(string $text) : Writer
     {
-        $this->info['creator'] = $string;
+        $this->info['creator'] = $text;
         return $this;
     }
 
     /**
      * Seta a última pessoa a alterar o documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoLastModifiedBy($string)
+    public function setInfoLastModifiedBy(string $text) : Writer
     {
-        $this->info['last_modified'] = $string;
+        $this->info['last_modified'] = $text;
         return $this;
     }
 
     /**
      * Seta o título do documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoTitle($string)
+    public function setInfoTitle(string $text) : Writer
     {
-        $this->info['title'] = $string;
+        $this->info['title'] = $text;
         return $this;
     }
 
     /**
      * Seta o assunto do documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoSubject($string)
+    public function setInfoSubject(string $text) : Writer
     {
-        $this->info['subject'] = $string;
+        $this->info['subject'] = $text;
         return $this;
     }
 
     /**
      * Seta a descrição do documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoDescription($string)
+    public function setInfoDescription(string $text) : Writer
     {
-        $this->info['description'] = $string;
+        $this->info['description'] = $text;
         return $this;
     }
 
     /**
      * Seta palavras chave para o documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoKeywords($string)
+    public function setInfoKeywords(string $text) : Writer
     {
-        $this->info['keywords'] = $string;
+        $this->info['keywords'] = $text;
         return $this;
     }
 
     /**
      * Seta a categoria do documento.
      *
-     * @param string $string
+     * @param string $text
      * @return ReportCollection\Libs\Writer
      */
-    public function setInfoCategory($string)
+    public function setInfoCategory(string $text) : Writer
     {
-        $this->info['category'] = $string;
+        $this->info['category'] = $text;
         return $this;
     }
 
@@ -213,7 +213,7 @@ class Writer
      * @param string $format
      * @return ReportCollection\Libs\Writer
      */
-    public function setOutputDateFormat($format)
+    public function setOutputDateFormat(string $format) : Writer
     {
         $this->output_format_date = $format;
         return $this;
@@ -229,7 +229,7 @@ class Writer
      * @throws \InvalidArgumentException
      * @return ReportCollection\Libs\Writer
      */
-    public function setColumnWidth($col, $value)
+    public function setColumnWidth($col, $value) : Writer
     {
         if (is_numeric($col)) {
             throw new \InvalidArgumentException("Unsupported column vowel");
@@ -242,10 +242,10 @@ class Writer
      * Grava o resultado em arquivo.
      *
      * @param  string  $filename
-     * @param  boolean $download
+     * @param  boolean $force_download
      * @return void
      */
-    public function save($filename, $download = false)
+    public function save(string $filename, bool $force_download = false)
     {
         $basename  = pathinfo($filename, PATHINFO_BASENAME);
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
@@ -256,6 +256,7 @@ class Writer
             if ($extension == $slug && $slug == 'pdf') {
                 IOFactory::registerWriter('CustomPDF', PDFWriter::class);
                 $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomPDF');
+
             } elseif ($extension == $slug && in_array($slug, ['html', 'htm']) == true) {
                 IOFactory::registerWriter('CustomHtml', HtmlWriter::class);
                 $factory = IOFactory::createWriter($this->getSpreadsheet(), 'CustomHtml');
@@ -270,7 +271,7 @@ class Writer
                 "Unsupported file type for writing. Use " . implode(',', $this->writers));
         }
 
-        if ($download == true) {
+        if ($force_download == true) {
             $this->httpHeaders($basename, $extension);
             $factory->save('php://output');
         } else {
@@ -284,13 +285,13 @@ class Writer
      * @param string $filename
      * @return void
      */
-    public function output($filename)
+    public function output(string $filename)
     {
         $basename  = pathinfo($filename, PATHINFO_BASENAME);
         $this->save($basename, true);
     }
 
-    private function getSpreadsheet()
+    private function getSpreadsheet() : Spreadsheet
     {
         if ($this->spreadsheet != null) {
             return $this->spreadsheet;
@@ -498,7 +499,7 @@ class Writer
         //             ->getColumnDimension($vowel)->setWidth($col_width[$vowel]);
     }
 
-    protected function calcLineHeight($line, $int)
+    protected function calcLineHeight(int $line, int $int)
     {
         $height = $this->getLineHeight($line);
         if ($height < $int) {
@@ -506,7 +507,7 @@ class Writer
         }
     }
 
-    protected function getLineHeight($line)
+    protected function getLineHeight(int $line) : int
     {
         if(!isset($this->line_heights[$line])) {
             return 20;
@@ -514,7 +515,7 @@ class Writer
         return $this->line_heights[$line];
     }
 
-    protected function calcColumnWidth($vowel, $text)
+    protected function calcColumnWidth(string $vowel, $text)
     {
         $width = $this->getColumnWidth($vowel);
         $int = \strlen($text) + 5;
@@ -523,7 +524,7 @@ class Writer
         }
     }
 
-    protected function getColumnWidth($vowel)
+    protected function getColumnWidth(string $vowel) : int
     {
         if (is_numeric($vowel)) {
             throw new \InvalidArgumentException("Only vowels are accepted");
@@ -543,7 +544,7 @@ class Writer
      * @throws \InvalidArgumentException
      * @return string
      */
-    protected function getColumnVowel($number)
+    protected function getColumnVowel($number) : string
     {
         if (!is_int($number) && !is_numeric($number)) {
             throw new \InvalidArgumentException("Only numbers are accepted");
@@ -571,7 +572,7 @@ class Writer
         return $vowel_one . $vowel_two;
     }
 
-    private function httpHeaders($basename, $extension)
+    private function httpHeaders(string $basename, string $extension) : bool
     {
         if (php_sapi_name() == "cli") {
             // Quando em testes de unidade, não usa-se headers
@@ -616,5 +617,7 @@ class Writer
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); // Sempre modificado
         header('Cache-Control: cache, must-revalidate'); // HTTP/1.1
         header('Pragma: public'); // HTTP/1.0
+
+        return true;
     }
 }
