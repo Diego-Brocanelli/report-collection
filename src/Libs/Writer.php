@@ -321,8 +321,11 @@ class Writer
                 if ($contents instanceof \DateTime) {
                     $text = $contents->format($this->output_format_date);
                     // TODO: Formatar a célula como data
-                } elseif (is_string($contents) || is_numeric($contents)) {
+                } elseif (is_string($contents) == true && is_numeric($contents) == false) {
                     $text = $contents;
+                } elseif(is_numeric($contents) == true) {
+                    // Para evitar formatações automáticas de números longos para formulas científicas
+                    $text = " " . $contents;
                 }
 
                 $styles = CssParser::parse($cell['styles']);

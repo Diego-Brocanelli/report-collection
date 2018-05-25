@@ -170,4 +170,34 @@ class WriteToOdsTest extends TestCase
         // line-height
         // $this->assertEquals(25, $reader->getBuffer()->getActiveSheet()->getRowDimension(1)->getRowHeight());
     }
+
+    public function testNumericScientific()
+    {
+        $provider = array(
+            ["Company", "Contact", "Date"],
+            [ 359571084857470,  359571084848651,  351837098378052]
+        );
+
+        $reader = Reader::createFromArray($provider);
+        $writer = Writer::createFromReader($reader);
+
+        $temp_file = tempnam(sys_get_temp_dir(), 'WriterToOdsScientificTest') . ".ods";
+        $writer->save($temp_file);
+        $this->assertFileExists($temp_file);
+
+        // O arquivo gravado está legível
+        $reader = Reader::createFromFile($temp_file);
+        $this->assertInstanceOf(Reader::class, $reader);
+
+        $a2 = $reader->getBuffer()->getActiveSheet()->getCell('A2')->getValue();
+        $b2 = $reader->getBuffer()->getActiveSheet()->getCell('B2')->getValue();
+        $c2 = $reader->getBuffer()->getActiveSheet()->getCell('C2')->getCalculatedValue();
+
+        // Internamente a biblioteca transforma números longos para strings!
+        // Isso é proposital para evitar a formatação automática que gera números científicos
+        // Por exemplo, '359571084857470' se tornaria '3.5957108485747E+14' na autoformatação
+        $this->assertEquals('359571084857470', $a2);
+        $this->assertEquals('359571084848651', $b2);
+        $this->assertEquals('351837098378052', $c2);
+    }
 }
