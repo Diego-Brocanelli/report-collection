@@ -7,6 +7,8 @@
 
 *By [Ricardo Pereira Dias &copy;](https://github.com/rpdesignerfly)*
 
+> Este pacote esta em fase de desenvolvimento. Use esta biblioteca por sua conta e risco!
+
 Report Collection é uma biblioteca que permite a importação de dados proveniente de diversas fontes, para posterior tratamento e exportação.
 
 Seu principal objetivo é a geração de relatórios para download, embora possa também ser usado unicamente para manipulação das informações.
